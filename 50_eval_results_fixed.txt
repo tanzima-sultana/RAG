@@ -1,0 +1,380 @@
+--- k :  5
+50
+query_embeddings shape -  (50, 384)
+indices shape -  (50, 5)
+----- i :  0
+ Qus :  What happens to Simon Fraser of Balnain during the Revolutionary War?
+Generated ans :  Based on the context, Simon Fraser of Balnain, a kinsman of Jamie's on the British side, is **killed** during the Revolutionary War. Following his death, Jamie and Claire are asked to take his body back to Scotland.
+Ground truth ans :  Simon Fraser of Balnain, a kinsman of Jamie's on the British side, is killed at Saratoga, and Jamie and Claire are asked to take his body back to Scotland.
+Matrices :  1 1 1
+Cost :  0.0051779999999999994 0.005595 0.000513
+Latency :  2.379812479019165 2.3315517902374268 1.637758493423462
+----- i :  1
+ Qus :  How long did Collins spend fighting to restore citizenship to the renunciants?
+Generated ans :  Based on the context, Collins spent **23 years** fighting to restore citizenship to the renunciants. After the federal appeals court ruled that each renunciant's case had to be individually decided, "Collins embarked on a 23-year campaign, filing thousands of court cases to successfully recover the renunciants' citizenships."
+Ground truth ans :  Collins spent 23 years filing thousands of court cases to successfully recover the renunciants' citizenships.
+Matrices :  2 1 1
+Cost :  0.0054 0.005292 0.0005729999999999999
+Latency :  3.2773001194000244 1.8412885665893555 1.7381784915924072
+----- i :  2
+ Qus :  Who founded Entrepreneurs for Sustainability?
+Generated ans :  Based on the context, **Entrepreneurs for Sustainability (E4S) was founded by Holly Harlan**, the owner of a business consulting firm in Cleveland Heights, in the year 2000.
+Ground truth ans :  Holly Harlan, owner of a business consulting firm in Cleveland Heights, founded Entrepreneurs for Sustainability in 2000.
+Matrices :  3 1 1
+Cost :  0.004173 0.004362 0.000468
+Latency :  1.7413442134857178 1.9478099346160889 1.3321051597595215
+----- i :  3
+ Qus :  Where was Zizi Lambrino's husband's morganatic marriage annulled?
+Generated ans :  Based on the context provided, the morganatic marriage was annulled by the **Supreme Court**. The text states that Mille supported Zizi Lambrino's claim that "the marriage was illegally annulled by the supreme court."
+Ground truth ans :  The marriage was annulled by the Supreme Court.
+Matrices :  4 1 1
+Cost :  0.004755 0.004839 0.00054
+Latency :  2.2491302490234375 2.1208879947662354 1.0574684143066406
+----- i :  4
+ Qus :  What year did Mille join the PSDMR?
+Generated ans :  Based on the context, the exact year Mille joined the PSDMR is not explicitly stated. The context only mentions that "Mille joined the newly created PSDMR and stood among its most radical members" and that "he was to be expelled from the group two years later, due to his purchase of Adevarul." While we know he was expelled approximately two years after joining, the specific year of joining is not clearly provided in the context.
+
+I don't know.
+Ground truth ans :  Mille joined the PSDMR in 1893.
+Matrices :  4 1 1
+Cost :  0.0057090000000000005 0.004524 0.000675
+Latency :  3.3682973384857178 1.2293388843536377 1.2380800247192383
+----- i :  5
+ Qus :  What place did Daska finish at the 2017 TCS New York City Marathon?
+Generated ans :  Based on the context, Daska finished in **third place** at the 2017 TCS New York City Marathon on November 5, 2017, with a time of 2:28:08.
+Ground truth ans :  Third place, with a time of 2:28:08.
+Matrices :  5 1 1
+Cost :  0.005112 0.005487 0.000516
+Latency :  2.559542655944824 1.9464097023010254 1.1258256435394287
+----- i :  6
+ Qus :  How many interceptions did James Patrick have during his all-star season in 2010?
+Generated ans :  Based on the context, James Patrick had **nine interceptions** during his all-star season in 2010, when he also recorded 68 tackles and a touchdown.
+Ground truth ans :  Nine interceptions.
+Matrices :  6 1 1
+Cost :  0.0049110000000000004 0.005094 0.00048300000000000003
+Latency :  1.6280806064605713 1.9562509059906006 1.432603120803833
+----- i :  7
+ Qus :  What was Veli Paloheimo's best finish at a Grand Slam tournament?
+Generated ans :  Based on the context provided, Veli Paloheimo's best finish at a Grand Slam tournament was the **fourth round** of the **1990 Australian Open**.
+Ground truth ans :  He reached the fourth round at the 1990 Australian Open.
+Matrices :  7 1 1
+Cost :  0.005058 0.004659000000000001 0.0004919999999999999
+Latency :  1.6432414054870605 1.5317587852478027 1.122952938079834
+----- i :  8
+ Qus :  What is the common name for Maryland Route 228?
+Generated ans :  Based on the context, the common name for Maryland Route 228 is **Berry Road**.
+Ground truth ans :  Berry Road
+Matrices :  8 1 1
+Cost :  0.004779 0.004635 0.00040800000000000005
+Latency :  1.435945749282837 1.3324182033538818 1.3300840854644775
+----- i :  9
+ Qus :  What TV program explored Maxwell Hutchinson's criticisms of Leeds?
+Generated ans :  Based on the context, Maxwell Hutchinson's criticisms of Leeds were explored on the **BBC television programme *Inside Out***.
+Ground truth ans :  The BBC television programme Inside Out explored his claims.
+Matrices :  9 1 1
+Cost :  0.004755 0.005241 0.000441
+Latency :  1.8693835735321045 2.3296334743499756 1.6371514797210693
+----- i :  10
+ Qus :  How many people lived in Konjsko according to the 2021 census?
+Generated ans :  According to the 2021 census, **13 residents** lived in Konjsko.
+Ground truth ans :  13 residents
+Matrices :  10 1 1
+Cost :  0.003438 0.003744 0.00043500000000000006
+Latency :  1.6407692432403564 1.6392087936401367 1.1208181381225586
+----- i :  11
+ Qus :  Where did Jørn Ording make his stage debut?
+Generated ans :  Based on the context provided, Jørn Ording made his stage debut in **1938 at Den Nationale Scene**.
+Ground truth ans :  He made his stage debut at Den Nationale Scene in 1938.
+Matrices :  11 1 1
+Cost :  0.00513 0.005319 0.00044400000000000006
+Latency :  2.459603786468506 2.2517571449279785 1.3294010162353516
+----- i :  12
+ Qus :  When did Maryland Route 228 get extended into Prince George's County?
+Generated ans :  Based on the context, Maryland Route 228 was extended into Prince George's County **in 1995**, when it was built on a pair of new bridges over Mattawoman Creek.
+Ground truth ans :  MD 228 was extended into Prince George's County in 1995, when a pair of new bridges over Mattawoman Creek were built.
+Matrices :  12 1 1
+Cost :  0.005105999999999999 0.0053430000000000005 0.00048300000000000003
+Latency :  1.6389458179473877 1.8455519676208496 1.2282254695892334
+----- i :  13
+ Qus :  What was the name of the fake persona that Mille and Saulescu used to send letters to the editors?
+Generated ans :  Based on the context, the fake persona that Mille and Saulescu used to send letters to the editors was named **Gh[eorghe] Copacineanu**.
+Ground truth ans :  They used the name Gh[eorghe] Copacineanu.
+Matrices :  13 1 1
+Cost :  0.00486 0.005112 0.000513
+Latency :  2.4594128131866455 1.739011526107788 1.3303914070129395
+----- i :  14
+ Qus :  What was the title of Ion Luca Caragiale's protest piece published by Mille's paper?
+Generated ans :  Based on the context, the title of Ion Luca Caragiale's protest piece published by Mille's paper (*Adevarul*) was **"1907 din primavara pana 'n toamna"** (translated as **"1907 from Spring till Autumn"**), which questioned the establishment and policies of Romania.
+Ground truth ans :  The piece was called "1907 din primavara pana 'n toamna," which translates to "1907 from spring till autumn."
+Matrices :  14 1 1
+Cost :  0.005412 0.004521000000000001 0.000624
+Latency :  2.1518397331237793 1.125868558883667 0.9225878715515137
+----- i :  15
+ Qus :  When did Chea Soth die?
+Generated ans :  Based on the context provided, Chea Soth died in **2012**.
+Ground truth ans :  Chea Soth died in 2012.
+Matrices :  15 1 1
+Cost :  0.004029 0.0045000000000000005 0.000402
+Latency :  1.218066692352295 1.6480536460876465 1.0232641696929932
+----- i :  16
+ Qus :  How did Wayne Collins die?
+Generated ans :  Based on the context, Wayne Collins died of a **heart attack** on **July 16, 1974**, while on a plane returning home from a business trip to Hong Kong.
+Ground truth ans :  He suffered a heart attack on a plane while returning home from a business trip to Hong Kong, and died on July 16, 1974.
+Matrices :  16 1 1
+Cost :  0.004332 0.004665 0.00045
+Latency :  1.639256477355957 2.1410796642303467 1.0235569477081299
+----- i :  17
+ Qus :  How many goals did Gustaf Forslund score during his time with the Ottawa Senators?
+Generated ans :  Based on the context, Gustaf Forslund scored **4 goals** (along with 9 assists, for a total of 13 points) during his 48 games with the Ottawa Senators in the 1932–33 season.
+Ground truth ans :  He scored 4 goals (along with 9 assists, for a total of 13 points).
+Matrices :  17 1 1
+Cost :  0.005481 0.0057480000000000005 0.000537
+Latency :  1.944450855255127 1.9996135234832764 1.3335819244384766
+----- i :  18
+ Qus :  What year was Marged ferch Ifan born?
+Generated ans :  Based on the context, Marged ferch Ifan was born in **1696**.
+Ground truth ans :  1696
+Matrices :  18 1 1
+Cost :  0.004539 0.005067 0.00041700000000000005
+Latency :  1.3063390254974365 2.9484946727752686 1.08015775680542
+----- i :  19
+ Qus :  How many seats does Leeds Arena have?
+Generated ans :  Based on the context provided, **Leeds Arena has 13,500 seats**. It is described as a 'super-theatre' style venue and was the first in the UK to be built in a 'fan' orientation.
+Ground truth ans :  Leeds Arena has 13,500 seats.
+Matrices :  19 1 1
+Cost :  0.005034 0.005304 0.000489
+Latency :  2.3924238681793213 1.7495636940002441 1.2298505306243896
+----- i :  20
+ Qus :  Where did Mille study to get his law degree?
+Generated ans :  Based on the context, Mille studied at the **Université Libre in Brussels**, where he was awarded a diploma in law in **1884**. He had previously attended the University of Paris (spring of 1882) and the local university's faculty of law in Iași (autumn 1878), but was ultimately expelled from the latter due to his politics.
+Ground truth ans :  Mille studied in Brussels, at the Universite Libre, where he was awarded a diploma in law in 1884.
+Matrices :  20 1 1
+Cost :  0.005439 0.006189 0.000588
+Latency :  2.968374490737915 3.276007652282715 1.0251610279083252
+----- i :  21
+ Qus :  What county is the Shelley House in Madison, Connecticut located in?
+Generated ans :  Based on the context, the Shelley House in Madison, Connecticut is located in **New Haven County**.
+Ground truth ans :  New Haven County
+Matrices :  21 1 1
+Cost :  0.0035670000000000003 0.00402 0.000429
+Latency :  1.7422888278961182 1.841921329498291 1.0309438705444336
+----- i :  22
+ Qus :  Who were Anne Jardin's teammates in the 4x100 freestyle relay at the 1976 Olympics?
+Generated ans :  Based on the context, Anne Jardin's teammates in the 4x100-metre freestyle relay at the 1976 Summer Olympics were **Becky Smith, Gail Amundrud, and Barbara Clark**. The team finished third, winning a bronze medal.
+Ground truth ans :  Her teammates were Becky Smith, Gail Amundrud, and Barbara Clark.
+Matrices :  22 1 1
+Cost :  0.004428 0.004602 0.00057
+Latency :  2.2448861598968506 2.2527661323547363 1.2539777755737305
+----- i :  23
+ Qus :  What kind of organizations benefit most from integrated EFM suites?
+Generated ans :  Based on the context, the organizations that benefit most from integrated EFMS suites are:
+
+1. **Organizations with very large and busy facilities**, such as malls, hotel complexes, and transportation hubs, where the complexity of operations challenges operational efficiency.
+
+2. **Organizations with many buildings dispersed across remote locations**, such as retail chains, restaurant chains, banks, and food store chains, which operate medium-sized buildings that stretch facility management operations to high costs.
+
+Additionally, **commercial property managers** who plan and manage energy efficiency projects also benefit from using EFMS software platforms to perform energy audits and collaborate with contractors.
+Ground truth ans :  Organizations with either very large and busy facilities (such as malls, hotel complexes, and transportation hubs) or organizations with many buildings dispersed across remote locations (such as retail chains, restaurant chains, banks, and food store chains).
+Matrices :  23 1 1
+Cost :  0.005967 0.005343 0.0007559999999999999
+Latency :  2.967942714691162 2.4279685020446777 1.8731873035430908
+----- i :  24
+ Qus :  Where did the Bellator Season 6 Lightweight Tournament Final take place?
+Generated ans :  Based on the context, the Bellator Season 6 Lightweight Tournament Final took place in **New Orleans, Louisiana, United States** (at Bellator 70).
+Ground truth ans :  New Orleans, Louisiana, United States.
+Matrices :  24 1 1
+Cost :  0.0057209999999999995 0.0061530000000000005 0.00047999999999999996
+Latency :  2.0478134155273438 2.355076313018799 1.5362472534179688
+----- i :  25
+ Qus :  When did Theodoros Tzinis move to Patras?
+Generated ans :  Based on the context, Theodoros Tzinis moved to Patras in **1828**.
+Ground truth ans :  Theodoros Tzinis moved to Patras in 1828.
+Matrices :  25 1 1
+Cost :  0.003672 0.003915 0.000423
+Latency :  1.5418004989624023 2.241931438446045 1.8477590084075928
+----- i :  26
+ Qus :  Where did Weedman fight Rick Hawn in the Bellator Season 8 finals?
+Generated ans :  Based on the context, Weedman fought Rick Hawn in the finals on **May 25, 2012, at Bellator 70 in New Orleans, Louisiana**. He lost the fight via unanimous decision.
+Ground truth ans :  New Orleans, Louisiana (at Bellator 70 on May 25, 2012)
+Matrices :  26 1 1
+Cost :  0.00549 0.005823 0.000531
+Latency :  1.6410229206085205 2.1485838890075684 1.0975005626678467
+----- i :  27
+ Qus :  What university did Constantin Mille attend when he went to France?
+Generated ans :  Based on the context, Constantin Mille attended the **University of Paris** when he went to France in the spring of 1882.
+Ground truth ans :  He attended the University of Paris, starting in the spring of 1882.
+Matrices :  27 1 1
+Cost :  0.004656 0.004953 0.000447
+Latency :  1.962235450744629 2.540910482406616 1.25862455368042
+----- i :  28
+ Qus :  Who owned Dixiana Farm in Lexington, Kentucky?
+Generated ans :  Based on the context, **Major Barak G. Thomas**, a lawyer and American Civil War officer, established Dixiana Farm in Lexington, Kentucky in 1887. He was also a close friend of Charles Stuart Littlefield, who named his son Barry after him.
+Ground truth ans :  Major Barak G. Thomas, a lawyer and American Civil War officer, established Dixiana Farm in Lexington, Kentucky in 1887.
+Matrices :  28 0 1
+Cost :  0.005397 0.008655 0.000537
+Latency :  3.012096643447876 6.306121587753296 1.1990721225738525
+----- i :  29
+ Qus :  What materials were used to build the Church of St John the Baptist at Adel?
+Generated ans :  Based on the context, the Church of St John the Baptist at Adel was built using **gritstone** with **slate roofs**, constructed between 1150 and 1170.
+Ground truth ans :  It was built of gritstone with slate roofs.
+Matrices :  29 1 1
+Cost :  0.004968 0.005094 0.000495
+Latency :  1.7711851596832275 2.866321086883545 1.2309353351593018
+----- i :  30
+ Qus :  What is the elaborate meaning of cafm?
+Generated ans :  Based on the context provided, **CAFM** stands for **Computer Aided Facility Management**.
+
+It is mentioned as one of the components that merged to form **EFMS (Energy and Facility Management Software)**, along with EMS (Energy Management Software) and EAS (Energy Accounting Software). However, the context does not provide a more elaborate or detailed explanation of CAFM beyond its full name.
+Ground truth ans :  computer aided facility management
+Matrices :  30 1 1
+Cost :  0.004430999999999999 0.0046170000000000004 0.000606
+Latency :  3.2743146419525146 3.174469470977783 1.5358383655548096
+----- i :  31
+ Qus :  Where is the location of hennigsdorf?
+Generated ans :  Based on the context, Hennigsdorf is a town in the **district of Oberhavel, in Brandenburg, Germany**. It is situated **north-west of Berlin**, just across the city border, which is formed mainly by the Havel River.
+Ground truth ans :  It is in the district of Oberhavel, in Brandenburg, near Berlin, Germany
+Matrices :  31 1 1
+Cost :  0.004548 0.004923 0.000516
+Latency :  2.120818853378296 2.0621354579925537 1.3617196083068848
+----- i :  32
+ Qus :  When was jørn ording born?
+Generated ans :  Based on the context, Jørn Ording was born on **21 February 1916** in Kristiania.
+Ground truth ans :  21 february 1916
+Matrices :  32 1 1
+Cost :  0.003792 0.004359 0.000432
+Latency :  1.5530648231506348 1.9861195087432861 1.246912956237793
+----- i :  33
+ Qus :  Who made fuckart & pimp?
+Generated ans :  Based on the context, **Fuckart & Pimp** was conceived by **Alex Chappel** and **David C. West** (a freelance reporter) in April 1998.
+Ground truth ans :  alex chappel and david c west
+Matrices :  33 1 1
+Cost :  0.005088 0.00552 0.000477
+Latency :  1.927893877029419 2.1793088912963867 1.4337539672851562
+----- i :  34
+ Qus :  If the gallery continues their sexual entertainment exhibition, what will happen to the gallery?
+Generated ans :  Based on the context, if the exhibition continued, **the gallery would be risking prosecution**. This was based on Southwark Council's warning letter, which stated that the property appeared to be being used for sexual entertainment and that the show's curator may have committed an offence. The warning was issued on the evidence of an undercover council officer who paid five pounds to watch the act through a spy hole.
+Ground truth ans :  the gallery would be risking prosecution
+Matrices :  34 1 1
+Cost :  0.0054 0.005844 0.000621
+Latency :  2.5605950355529785 3.7836227416992188 1.7451677322387695
+----- i :  35
+ Qus :  Who did the worker decide to lead the collectivization process?
+Generated ans :  Based on the context, the workers decided that **Kozlov and Safronov** would lead the collectivization process, even though they deeply hate each other.
+Ground truth ans :  kozlov and safronov
+Matrices :  35 1 1
+Cost :  0.004119 0.0037770000000000004 0.00046199999999999995
+Latency :  1.7086694240570068 1.2613811492919922 4.987583875656128
+----- i :  36
+ Qus :  What things safronov is against of?
+Generated ans :  Based on the context, Safronov is against the following things:
+
+1. **Time limits on workers' schedules** - He opposes the time limits that management places on workers' schedules and complains when management tells them to stop working for the day.
+
+2. **Non-manual contributions** - He condemns other workers' attempts to contribute anything other than manual labor to the project.
+
+3. **Voschev's search for truth** - He dislikes Voschev's necessity for truth, and even suspects that **truth is a class enemy**, believing it to be unimportant to the proletarian cause.
+
+4. **Kozlov** - He deeply hates Kozlov, and the two frequently clash, with both accusing each other of trying to undermine the workers' goals.
+Ground truth ans :  the time limits that management places on workers ’ schedules and other workers ' attempting to contribute anything other than manual labor to the project
+Matrices :  36 1 1
+Cost :  0.006756 0.004734 0.0008730000000000001
+Latency :  4.505452871322632 1.4332048892974854 1.9536046981811523
+----- i :  37
+ Qus :  What is nastya's mpother's name?
+Generated ans :  Based on the context, Nastya's mother's name is **Julia**.
+Ground truth ans :  Julia
+Matrices :  37 1 1
+Cost :  0.004452 0.0048119999999999994 0.000396
+Latency :  1.2514111995697021 1.8416731357574463 1.4325120449066162
+----- i :  38
+ Qus :  How many children does james have?
+Generated ans :  Based on the context, **James has two children**: one daughter who is 14 years old, and a 4-year-old son.
+Ground truth ans :  2
+Matrices :  38 1 1
+Cost :  0.004418999999999999 0.0046830000000000005 0.000432
+Latency :  1.8147106170654297 2.1571972370147705 1.1503422260284424
+----- i :  39
+ Qus :  What is the population of qasımalılar?
+Generated ans :  Based on the context provided, the population of Qasımalılar is **855**.
+Ground truth ans :  855
+Matrices :  39 1 1
+Cost :  0.00198 0.002256 0.000414
+Latency :  1.3310325145721436 1.7308926582336426 1.1358811855316162
+----- i :  40
+ Qus :  Who wrote outlander novels?
+Generated ans :  Based on the context provided, the Outlander series of novels was written by **Diana Gabaldon**.
+Ground truth ans :  diana gabaldon
+Matrices :  40 1 1
+Cost :  0.0032040000000000003 0.003027 0.000405
+Latency :  1.9463350772857666 1.7404570579528809 1.1261072158813477
+----- i :  41
+ Qus :  Who kidnaps jem?
+Generated ans :  Based on the context, **Rob Cameron**, one of Brianna's coworkers, kidnaps Jem. It appears that he took Jem into the past.
+Ground truth ans :  rob cameron, one of brianna ' s coworker
+Matrices :  41 1 1
+Cost :  0.004815 0.00522 0.000447
+Latency :  1.6378684043884277 1.6053738594055176 1.36505126953125
+----- i :  42
+ Qus :  How did Claire know henri - christian was ill?
+Generated ans :  Based on the context, Claire learned that Henri-Christian was ill through **a letter from Laoghaire's daughter Marsali**, in which Marsali beseeched Claire's help in treating him.
+Ground truth ans :  a letter from laoghaire ' s daughter marsali reveals that her son, henri - christian is ill
+Matrices :  42 1 1
+Cost :  0.005106 0.00552 0.00047999999999999996
+Latency :  2.528942108154297 1.8727588653564453 1.2285361289978027
+----- i :  43
+ Qus :  Who is William's father?
+Generated ans :  Based on the context, William's father is **James Fraser** (Jamie Fraser). William Ransom is described as "the illegitimate son of James Fraser and Geneva Dunsany," and this is confirmed later in the context when "William realizes that Jamie is his father."
+Ground truth ans :  Jamie
+Matrices :  43 1 1
+Cost :  0.004719 0.004932000000000001 0.00051
+Latency :  3.0719821453094482 2.1502745151519775 0.9971151351928711
+----- i :  44
+ Qus :  What is the main theme of outlander series?
+Generated ans :  Based on the context provided, the **Outlander series** contains elements of multiple themes, including:
+
+- **Historical fiction**
+- **Romance**
+- **Adventure**
+- **Fantasy**
+
+The series is centered on **time travel**, following 20th century doctor Claire Fraser and her 18th century Scottish Highlander warrior husband Jamie Fraser, blending these various genres together throughout their adventures.
+Ground truth ans :  The series in about time travelling 20th century doctor claire fraser and her 18th century scottish highlander warrior husband jamie fraser's romance and adventure.
+Matrices :  44 1 1
+Cost :  0.00543 0.0056370000000000005 0.000603
+Latency :  2.791503429412842 2.2535791397094727 1.0995702743530273
+----- i :  45
+ Qus :  How many members does the institution of structural engineers has in 2021?
+Generated ans :  Based on the context, the Institution of Structural Engineers had **29,900 members** operating in 112 countries in 2021.
+Ground truth ans :  29,900 members
+Matrices :  45 1 1
+Cost :  0.005187 0.005439 0.00045299999999999995
+Latency :  1.6352782249450684 1.8764467239379883 1.6316657066345215
+----- i :  46
+ Qus :  When marjem chatterton was elected as a fellow?
+Generated ans :  Based on the context, Marjem Chatterton was elected as a fellow in **1954**, being the first woman to be elected as a fellow.
+Ground truth ans :  1954
+Matrices :  46 1 1
+Cost :  0.004398 0.004098 0.000447
+Latency :  1.6509771347045898 1.608088731765747 1.9367396831512451
+----- i :  47
+ Qus :  What is the family unit of cytisus striatus?
+Generated ans :  Based on the context, **Cytisus striatus** belongs to the **legume family**.
+Ground truth ans :  legume family
+Matrices :  47 1 1
+Cost :  0.0029909999999999997 0.0033150000000000002 0.00041700000000000005
+Latency :  1.4394748210906982 2.480682373046875 1.6360628604888916
+----- i :  48
+ Qus :  How many accepted species in the genus argulus?
+Generated ans :  Based on the context, there are about **140 accepted species** in the genus Argulus (with a more specific count of **138 species** accepted as of December 2022).
+Ground truth ans :  140
+Matrices :  48 1 1
+Cost :  0.0034470000000000004 0.003789 0.000468
+Latency :  1.8458282947540283 2.120333433151245 1.1261773109436035
+----- i :  49
+ Qus :  Since when the institution of structural engineers publishes their magazine?
+Generated ans :  Based on the context, the Institution of Structural Engineers has been publishing their magazine, **The Structural Engineer**, **monthly since 1924**.
+Ground truth ans :  1924
+Matrices :  49 1 1
+Cost :  0.004377 0.004698 0.00044400000000000006
+Latency :  2.180983304977417 1.9459176063537598 1.227525234222412
+total cost :  0.505215 , total latency :  282.8423664569855

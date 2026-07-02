@@ -1,0 +1,7 @@
+config.py
+*.pkl
+*.npy
+__pycache__/
+.ipynb_checkpoints/
+eval/results/**/*_details.json
+.env
