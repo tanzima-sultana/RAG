@@ -1,7 +1,5 @@
-import os
-import nltk
-from nltk.tokenize import sent_tokenize
 from sentence_transformers import SentenceTransformer
+from datasets import load_dataset
 import numpy as np
 
 from config import SEED
@@ -24,13 +22,18 @@ def EVAL_QUS(doc_id, chunk_id, question, answer):
         'answer': answer
     }
 
-def EVAL_METRICES(k, recall, ans_faithfullness, ans_relevancy, cost, latency):
+def EVAL_METRICES(k, recall, mrr, precision_at_k, sas_score,
+                    score_faithfulness, score_relevancy, score_llm_correctness, cost, latency):
 
     return {
         'k': k,
         'recall': recall,
-        'ans_faithfullness': ans_faithfullness,
-        'ans_relevancy': ans_relevancy,
+        'mrr': mrr,
+        'precision_at_k': precision_at_k,
+        'sas_score': sas_score,
+        'score_faithfulness': score_faithfulness,
+        'score_relevancy': score_relevancy,
+        'score_llm_correctness': score_llm_correctness,
         'cost': cost,
         'latency': latency
     }
@@ -44,6 +47,76 @@ def EVAL_RESULT(qus, context, generated_ans, ground_truth_ans):
         'ground_truth_ans': ground_truth_ans
     }
 
+ # ----- NQ questions ----- #
+
+def normalize(text):
+    return ' '.join(text.lower().split())
+
+def word_overlap_ratio(text1, text2):
+    words1 = set(normalize(text1).split())
+    words2 = set(normalize(text2).split())
+    if not words1:
+        return 0
+    return len(words1 & words2) / len(words1)
+
+def find_matching_doc(answer_text, dataset, threshold=0.5):
+    best_doc = None
+    best_score = 0
+    for doc in dataset:
+        score = word_overlap_ratio(answer_text, doc['text'])
+        if score > best_score:
+            best_score = score
+            best_doc = doc
+    if best_score >= threshold:
+        return best_doc
+    return None
+
+def find_matching_chunk(answer_text, chunks_for_doc, threshold=0.5):
+    best_chunk = None
+    best_score = 0
+    for chunk in chunks_for_doc:
+        score = word_overlap_ratio(answer_text, chunk['chunk_text'])
+        if score > best_score:
+            best_score = score
+            best_chunk = chunk
+    if best_score >= threshold:
+        return best_chunk
+    return None
+
+def build_nq_eval_set(dataset, dataset_size, chunks):
+
+    # If eval_set already exists
+    path = f"eval/NQ_{dataset_size}/eval_set.json"
+    if os.path.exists(path):
+        with open(path, 'r') as f:
+            return json.load(f)
+        
+    nq_raw = load_dataset("sentence-transformers/natural-questions", split="train")
+    nq_sample = nq_raw.shuffle(seed=SEED).select(range(2000))
+
+    eval_set = []
+    for example in nq_sample:
+        question = example['query']
+        answer = example['answer']
+
+        # First find the doc that has the best overlapping score against the answer
+        matched_doc = find_matching_doc(answer, dataset)
+        if matched_doc is None:
+            continue
+        
+        # From the docs, find the best chunk
+        doc_chunks = [c for c in chunks if c['doc_id'] == matched_doc['doc_id']]
+        matched_chunk = find_matching_chunk(answer, doc_chunks)
+        if matched_chunk is None:
+            continue
+
+        eval_set.append(EVAL_QUS(matched_doc['doc_id'], matched_chunk['chunk_id'], question, answer))
+    
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, 'w') as f:
+        json.dump(eval_set, f, indent=2)
+
+    return eval_set
 
 # ----- Auto generate qus 
 
@@ -62,7 +135,7 @@ def parse_qa_response(response_text):
     return {'question': question, 'answer': answer}
 
 
-def generate_question_for_chunk(chunk):
+def generate_qa_from_chunk(chunk):
     prompt = f"""Here is a passage of text:
 
     {chunk['chunk_text']}
@@ -76,26 +149,34 @@ def generate_question_for_chunk(chunk):
     Answer: <answer>"""
 
     api_response = anthropic_msg_api(prompt)
-    response = api_response['response']
+    return api_response['response']
     
-    return response.content[0].text
 
-def generate_questions(chunks, no_of_questions, min_chunk_size): 
-    chunks = sample_chunks_for_eval(chunks, no_of_questions, min_chunk_size)
-    questions = []
-    for chunk in chunks:
-        qa = generate_question_for_chunk(chunk)
+def build_generated_eval_set(strategy, dataset, dataset_size, chunks, min_chunk_size, no_of_qus): 
+
+    path = f"eval/QA_{dataset_size}/{strategy}_{no_of_qus}/eval_set.json"
+    if os.path.exists(path):
+        with open(path, 'r') as f:
+            return json.load(f)
+
+    sample_chunks = sample_chunks_for_eval(chunks, no_of_qus, min_chunk_size)
+
+    eval_set = []
+
+    for chunk in sample_chunks:
+        qa = generate_qa_from_chunk(chunk)
         parsed = parse_qa_response(qa)
         qus, ans = parsed['question'], parsed['answer']
-        questions.append(EVAL_QUS(chunk['doc_id'], chunk['chunk_id'], qus, ans))      
+        eval_set.append(EVAL_QUS(chunk['doc_id'], chunk['chunk_id'], qus, ans))  
 
     # Save the generated questions to a JSON file
-    path = f"eval/QA_{no_of_questions}/eval_set.json"
+    
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, 'w') as f:
-        json.dump(questions, f, indent=2)
+        json.dump(eval_set, f, indent=2)
 
-    return questions 
+    return eval_set 
+
 
 # ----- Get ans using qus and context
 
@@ -156,44 +237,59 @@ def judge_relevancy(generated_answer, question):
     else:
         return 0, api_response  
 
+# ----- Answer LLM correectness
+def judge_llm_correctness(generated_answer, ground_truth_ans):
+    prompt = f"""You are a helpful assistant. Judge whether the following generated answer matches the ground truth answer in meaning, even if phrased differently. 
+    If the generated answer captures the key information in the ground truth, respond with "Correct". 
+    If the generated answer is missing key information or contradicts the ground truth, respond with "Incorrect".
+
+    Ground truth answer: {ground_truth_ans}
+
+    Generated answer: {generated_answer}
+
+    Does the generated answer match the ground truth?"""
+    
+    api_response = anthropic_msg_api(prompt)
+    judgement = api_response['response']
+
+    if "incorrect" in judgement.lower():
+        return 0, api_response
+    elif "correct" in judgement.lower():
+        return 1, api_response
+    else:
+        return 0, api_response
+
+# ----- MRR ----- #
+def compute_mrr(chunk_id, retrieved_chunk_ids):
+    if chunk_id in retrieved_chunk_ids:
+        rank = retrieved_chunk_ids.index(chunk_id) + 1
+        return 1 / rank
+    return 0
+
+# -----  Precision ----- #
+def compute_precision_at_k(chunk_id, retrieved_chunk_ids, k):
+    return (1 if chunk_id in retrieved_chunk_ids else 0) / k
+
+# ----- Cosine Similarity ----- #
+def compute_semantic_similarity(generated_ans, ground_truth_ans):
+    emb1 = model.encode(generated_ans, normalize_embeddings=True)
+    emb2 = model.encode(ground_truth_ans, normalize_embeddings=True)
+    return float(np.dot(emb1, emb2))
+
 # ----- Evaluate
 
-def eval_computation(chunks, indexing, k):
-    
-    ''''
-    # ----- Generated qus
-    no_of_questions = 30
+def evaluate(strategy, dataset, dataset_size, chunks, indexing, k,
+             use_faithfulness=False, use_relevancy=False, use_llm_correctness=False):
+
+    print("Evaluate for : ", strategy)
+
+    # ---- Get evat_set
+
+    #eval_set = build_nq_eval_set(dataset, dataset_size, chunks)
     min_chunk_size = 100
-
-    path1 = f"eval/QA_30/eval_set.json"
-    if os.path.exists(path1):
-        with open(path1, 'r') as f:
-            generated_qus = json.load(f)
-    else:
-        generated_qus = generate_questions(chunks, no_of_questions, min_chunk_size)
-
-    #print(generated_qus)
-
-    # ----- User defined qus
-
-    user_defined_qus = None 
-    path2 = f"eval/QA_20_User/eval_set.json"
-    if os.path.exists(path2):
-        with open(path2, 'r') as f:
-            user_defined_qus = json.load(f)
-    
-    #print(user_defined_qus)
-    '''
-
-    # ----- Eval qus and ans
-
-    #eval_set = {doc_id, chunk_id, question, answer}
-
-    eval_set = None
-    path = f"eval/QA_50/eval_set.json"
-    if os.path.exists(path):
-        with open(path, 'r') as f:
-            eval_set = json.load(f)
+    no_of_qus = 50
+    eval_set = build_generated_eval_set(strategy, dataset, dataset_size, chunks, min_chunk_size, no_of_qus)
+    #print(len(eval_set), eval_set)
 
     doc_ids = [item['doc_id'] for item in eval_set]
     chunks_ids = [item['chunk_id'] for item in eval_set]
@@ -210,6 +306,7 @@ def eval_computation(chunks, indexing, k):
     
     answer_faithfulness = []
     answer_relevancy = []
+    answer_llm_correctness = []
 
     recall = 0
 
@@ -253,29 +350,57 @@ def eval_computation(chunks, indexing, k):
             total_recall += 1
         else:
             recall = 0
-        
-        # 6. Answer faithfulness & relevancy
-        score_faithfulness, api_response2 = judge_faithfulness(generated_ans, context)
-        cost2 = api_response2['cost']
-        latency2 = api_response2['latency']
 
-        score_relevancy, api_response3 = judge_relevancy(generated_ans, qus)
-        cost3 = api_response3['cost']
-        latency3 = api_response3['latency']
+        # 6. MRR, precision and SAS score
+        mrr = compute_mrr(chunk_id, retrieved_chunk_ids)
+        precision_at_k = compute_precision_at_k(chunk_id, retrieved_chunk_ids, k)
+        sas_score = compute_semantic_similarity(generated_ans, ground_truth_ans)
+        
+        # 7. Answer faithfulness
+        score_faithfulness = 0
+        cost2 = 0
+        latency2 = 0
+        if use_faithfulness:
+            score_faithfulness, api_response2 = judge_faithfulness(generated_ans, context)
+            cost2 = api_response2['cost']
+            latency2 = api_response2['latency']
+
+        # 8. Answer relevancy
+        score_relevancy = 0
+        cost3 = 0
+        latency3 = 0
+        if use_relevancy:
+            score_relevancy, api_response3 = judge_relevancy(generated_ans, qus)
+            cost3 = api_response3['cost']
+            latency3 = api_response3['latency']
+        
+        # 9. Answer LLM correctness
+        score_llm_correctness = 0
+        cost4 = 0
+        latency4 = 0
+        if use_llm_correctness:
+            score_llm_correctness, api_response4 = judge_llm_correctness(generated_ans, ground_truth_ans)
+            cost4 = api_response4['cost']
+            latency4 = api_response4['latency']
 
         answer_faithfulness.append(score_faithfulness)
         answer_relevancy.append(score_relevancy)
+        answer_llm_correctness.append(score_llm_correctness)
 
-        total_cost += cost1 + cost2 + cost3
-        total_latency += latency1 + latency2 + latency3
+        total_cost += cost1 + cost2 + cost3 + cost4
+        total_latency += latency1 + latency2 + latency3 + latency4
 
-        eval_metrices.append(EVAL_METRICES(k, recall, score_faithfulness, score_relevancy, cost1+cost2+cost3, latency1+ latency2 + latency3))
+        eval_metrices.append(EVAL_METRICES(k, recall, 
+                                           mrr, precision_at_k, sas_score,
+                                           score_faithfulness, score_relevancy, score_llm_correctness,
+                                           cost1+cost2+cost3+cost4, latency1+ latency2 + latency3+ latency4))
 
         print("----- i : ", i)
         print(" Qus : ", qus)
         print("Generated ans : ", generated_ans)
         print("Ground truth ans : ", ground_truth_ans)
-        print("Matrices : ", recall, score_faithfulness, score_relevancy)
+        print("Matrices : recall, MRR, precision_at_k, sas_score : ", recall, mrr, precision_at_k, sas_score)
+        print("Matrices : score_faithfulness, score_relevancy, score_llm_correctness : ", score_faithfulness, score_relevancy, score_llm_correctness)
         print("Cost : ", cost1, cost2, cost3)
         print("Latency : ", latency1, latency2, latency3)
     
@@ -284,15 +409,9 @@ def eval_computation(chunks, indexing, k):
     recall = total_recall / len(questions)
     avg_ans_faithfulness = sum(answer_faithfulness)/len(answer_faithfulness)
     avg_ans_relevancy = sum(answer_relevancy)/len(answer_relevancy)
-    print("recall, avg ans faithfulness, avg ans releavncy : ", recall, avg_ans_faithfulness, avg_ans_relevancy)
-
-    return eval_results, eval_metrices, recall, avg_ans_faithfulness, avg_ans_relevancy, total_cost, total_latency
-
-
-def evaluate(dataset_size, strategy, chunks, indexing, k):
-    print("Evaluate for : ", strategy)
-    
-    eval_results, eval_metrices, recall, avg_ans_faithfulness, avg_ans_relevancy, total_cost, total_latency = eval_computation(chunks, indexing, k)
+    avg_ans_lmm_correctness = sum(answer_llm_correctness) / len(answer_llm_correctness)
+    print("recall, avg ans faithfulness, avg ans releavncy, avg_ans_lmm_correctness : ", 
+          recall, avg_ans_faithfulness, avg_ans_relevancy, avg_ans_lmm_correctness)
 
     eval_summary = {
         'dataset_size': dataset_size,
@@ -302,6 +421,7 @@ def evaluate(dataset_size, strategy, chunks, indexing, k):
         'recall': recall,
         'avg_faithfulness': avg_ans_faithfulness,
         'avg_relevancy': avg_ans_relevancy,
+        'avg_ans_lmm_correctness' : avg_ans_lmm_correctness,
         'total_cost': total_cost,
         'total_latency': total_latency,
     }
@@ -317,6 +437,7 @@ def evaluate(dataset_size, strategy, chunks, indexing, k):
 
     return eval_summary
 
+    
 
     
 

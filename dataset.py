@@ -23,7 +23,8 @@ def load_processed_dataset():
     #print(dataset_original[0])
 
     # ----- Dataset of size DATASET_SIZE
-    dataset_sample = dataset_original.shuffle(seed=SEED).select(range(DATASET_SIZE))
+    #dataset_sample = dataset_original.shuffle(seed=SEED).select(range(DATASET_SIZE))
+    dataset_sample = dataset_original.filter(lambda x: len(x['text']) > 5000).shuffle(seed=SEED).select(range(DATASET_SIZE))
 
     # ----- Save to disk
     dataset = dataset_sample.map(transform, remove_columns=dataset_sample.column_names)
