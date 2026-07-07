@@ -4,7 +4,8 @@ from nltk.tokenize import sent_tokenize
 from sentence_transformers import SentenceTransformer
 import numpy as np
 
-from config import SEED, ANTHROPIC_MSG_API_KEY, INPUT_COST_PER_MTOK, OUTPUT_COST_PER_MTOK
+from config import ANTHROPIC_MSG_API_KEY
+from constants import INPUT_COST_PER_MTOK, OUTPUT_COST_PER_MTOK
 import random
 import json
 import time

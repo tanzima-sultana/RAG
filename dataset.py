@@ -1,6 +1,6 @@
 import os
 from datasets import load_dataset, load_from_disk
-from config import SEED, DATASET, DATASET_SIZE, DATA_PATH
+from constants import SEED, DATASET, DATASET_SIZE, DATA_PATH
 
 def transform(example):
     return {

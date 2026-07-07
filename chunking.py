@@ -5,10 +5,7 @@ from sentence_transformers import SentenceTransformer
 import numpy as np
 import matplotlib.pyplot as plt
 
-from dataset import load_processed_dataset
-
-dataset = load_processed_dataset()
-sample = dataset.select(range(100)) 
+from constants import FIXED, SENTENCE, SEMANTIC, MAX_CHUNK_SIZE, FIXED_CHUNK_OVERLAP, SEMANTIC_THREASHOLD
 
 def CHUNK(doc_id, doc_title, chunk_id, chunk_text, chunk_size, strategy):
     return {
@@ -22,14 +19,11 @@ def CHUNK(doc_id, doc_title, chunk_id, chunk_text, chunk_size, strategy):
 
 model = SentenceTransformer('all-MiniLM-L6-v2')
 tokenizer = model.tokenizer
-max_chunk_size = 256
 
 # ----- a. Fixed chunking
 
-overlap = 32
-chunk_size_fixed = []
-
 def chunking_fixed(doc_id, doc_title, text, max_chunk_size, overlap):
+    chunk_sizes = []
     # Get the tokens from the text
     tokens = tokenizer.encode(text)
 
@@ -45,31 +39,37 @@ def chunking_fixed(doc_id, doc_title, text, max_chunk_size, overlap):
         chunk_text = tokenizer.decode(chunk_tokens)
         # Make CHUNK
         chunk_size =  len(chunk_tokens)
-        chunk_size_fixed.append(chunk_size)
+        chunk_sizes.append(chunk_size)
+
         chunks.append(CHUNK(doc_id, doc_title, chunk_id, chunk_text, chunk_size, 'fixed'))
+        
         # To ensure overlap
         start += max_chunk_size - overlap
         chunk_id += 1
 
     
-    return chunks
+    return chunks, chunk_sizes
 
 def fixed_chunking(dataset):
     chunks_fixed = []
+    chunk_size_fixed = []
+
     for doc in dataset:
         doc_id = doc['doc_id']
         doc_title = doc['title']
         text = doc['text']
 
-        chunks_fixed.extend(chunking_fixed(doc_id, doc_title, text, max_chunk_size, overlap))
+        c1, c2 = chunking_fixed(doc_id, doc_title, text, MAX_CHUNK_SIZE, FIXED_CHUNK_OVERLAP)
+        chunks_fixed.extend(c1)
+        chunk_size_fixed.extend(c2)
     
-    return chunks_fixed
+    avg_chunk_size = np.mean(chunk_size_fixed)
+    return chunks_fixed, avg_chunk_size
 
 # ----- b. Sentence aware chunking
-chunk_size_sentence = []
 
 def chunking_sentence_aware(doc_id, doc_title, text, max_chunk_size):  
-
+    chunk_sizes = [] 
     sentences = sent_tokenize(text)
     chunks = []
     current_chunk = []
@@ -91,10 +91,10 @@ def chunking_sentence_aware(doc_id, doc_title, text, max_chunk_size):
                 chunk_text = tokenizer.decode(chunk_tokens)
                 # Make CHUNK
                 chunk_size =  len(chunk_tokens)
-                chunk_size_sentence.append(chunk_size)
+                chunk_sizes.append(chunk_size)
                 chunks.append(CHUNK(doc_id, doc_title, chunk_id, chunk_text, chunk_size, 'sentence-aware'))
                 # To ensure overlap
-                start += max_chunk_size - overlap
+                start += max_chunk_size - FIXED_CHUNK_OVERLAP
                 chunk_id += 1
             current_chunk = []
             current_chunk_tokens = 0
@@ -104,7 +104,7 @@ def chunking_sentence_aware(doc_id, doc_title, text, max_chunk_size):
         elif current_chunk_tokens + len(tokens) > max_chunk_size:
             chunk_text = ' '.join(current_chunk)
             chunk_size = current_chunk_tokens
-            chunk_size_sentence.append(chunk_size)
+            chunk_sizes.append(chunk_size)
             chunks.append(CHUNK(doc_id, doc_title, chunk_id, chunk_text, chunk_size, 'sentence-aware'))
 
             current_chunk = []
@@ -119,30 +119,32 @@ def chunking_sentence_aware(doc_id, doc_title, text, max_chunk_size):
     if current_chunk:
         chunk_text = ' '.join(current_chunk)
         chunk_size = current_chunk_tokens
-        chunk_size_sentence.append(chunk_size)
+        chunk_sizes.append(chunk_size)
         chunks.append(CHUNK(doc_id, doc_title, chunk_id, chunk_text, chunk_size, 'sentence-aware'))
 
-    return chunks
+    return chunks, chunk_sizes
 
 def sentence_aware_chunking(dataset):
     chunks_sentence = []
+    chunk_size_sentence = []
     for doc in dataset:
         doc_id = doc['doc_id']
         doc_title = doc['title']
         text = doc['text']
 
-        chunks_sentence.extend(chunking_sentence_aware(doc_id, doc_title, text, max_chunk_size))
+        c1, c2 = chunking_sentence_aware(doc_id, doc_title, text, MAX_CHUNK_SIZE)
+        chunks_sentence.extend(c1)
+        chunk_size_sentence.extend(c2)
     
-    return chunks_sentence
+    avg_chunk_size = np.mean(chunk_size_sentence)
+    return chunks_sentence, avg_chunk_size
 
 # c. Semantic chunking
 
-threashold = 0.1
-chunk_size_semantic = []
-similarities = []
+#similarities = []
 
 def chunking_semantic(doc_id, doc_title, text, max_chunk_size, threashold):
-
+    chunk_sizes = [] 
     # Get sentence list from the doc
     sentences = sent_tokenize(text)
 
@@ -178,10 +180,10 @@ def chunking_semantic(doc_id, doc_title, text, max_chunk_size, threashold):
                 chunk_text = tokenizer.decode(chunk_tokens)
                 # Make CHUNK
                 chunk_size =  len(chunk_tokens)
-                chunk_size_semantic.append(chunk_size)
+                chunk_sizes.append(chunk_size)
                 chunks.append(CHUNK(doc_id, doc_title, chunk_id, chunk_text, chunk_size, 'semantic'))
                 # To ensure overlap
-                start += max_chunk_size - overlap
+                start += max_chunk_size - FIXED_CHUNK_OVERLAP
                 chunk_id += 1
             
             prev_embedding = None  
@@ -197,7 +199,7 @@ def chunking_semantic(doc_id, doc_title, text, max_chunk_size, threashold):
             cosine_similarity = np.dot(embedding_1, embedding_2) / (np.linalg.norm(embedding_1) * np.linalg.norm(embedding_2))
 
             # Append the cosine similarity to the golab array to find a optimal threashold
-            similarities.append(cosine_similarity)
+            #similarities.append(cosine_similarity)
 
             # if similarity less than threshold, finish the current chunk and add to chunks
             # Check token count too
@@ -207,7 +209,7 @@ def chunking_semantic(doc_id, doc_title, text, max_chunk_size, threashold):
                 # ---- Make CHUNK
                 chunk_text = ' '.join(current_chunk)
                 chunk_size = current_chunk_tokens
-                chunk_size_semantic.append(chunk_size)
+                chunk_sizes.append(chunk_size)
                 #print(doc_id, chunk_size)
                 chunks.append(CHUNK(doc_id, doc_title, chunk_id, chunk_text, chunk_size, 'semantic'))
 
@@ -229,82 +231,50 @@ def chunking_semantic(doc_id, doc_title, text, max_chunk_size, threashold):
     if current_chunk:
         chunk_text = ' '.join(current_chunk)
         chunk_size = current_chunk_tokens
-        chunk_size_semantic.append(chunk_size)
+        chunk_sizes.append(chunk_size)
         chunks.append(CHUNK(doc_id, doc_title, chunk_id, chunk_text, chunk_size, 'semantic'))
 
-    return chunks
+    return chunks, chunk_sizes
 
 def semantic_chunking(dataset):
     chunks_semantic = []
+    chunk_size_semantic = []
     for doc in dataset:
         doc_id = doc['doc_id']
         doc_title = doc['title']
         text = doc['text']
 
-        chunks_semantic.extend(chunking_semantic(doc_id, doc_title, text, max_chunk_size, threashold))
+        c1, c2 = chunking_semantic(doc_id, doc_title, text, MAX_CHUNK_SIZE, SEMANTIC_THREASHOLD)
+        chunks_semantic.extend(c1)
+        chunk_size_semantic.extend(c2)
     
-    return chunks_semantic
+    avg_chunk_size = np.mean(chunk_size_semantic)
+    return chunks_semantic, avg_chunk_size
 
 # ----- Get or compute chunks and save to disk
 import os
 import pickle
 
-def compute_chunks(chunking_fn, dataset, dataset_size, strategy_name):
-    path = f"chunks/{dataset_size}/{strategy_name}.pkl"
+def compute_chunks(dataset, dataset_size, chunk_type):
+    path = f"chunks/{dataset_size}/{chunk_type}.pkl"
     
     if os.path.exists(path):
         with open(path, 'rb') as f:
-            #print("Load chunks from disk")
-            return pickle.load(f)
+            cached = pickle.load(f)
+        return cached['chunks'], cached['avg_chunk_size']
     
-    chunks = chunking_fn(dataset)
+    chunks = []
+    avg_chunk_size = 0
+
+    if chunk_type == FIXED:
+        chunks, avg_chunk_size = fixed_chunking(dataset)
+    elif chunk_type == SENTENCE:
+        chunks, avg_chunk_size = sentence_aware_chunking(dataset)
+    else:
+        chunks, avg_chunk_size = semantic_chunking(dataset)
     
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, 'wb') as f:
-        pickle.dump(chunks, f)
+        pickle.dump({'chunks': chunks, 'avg_chunk_size': avg_chunk_size}, f)
     
-    return chunks
-
-# ----- main
-if __name__ == "__main__":
-
-    chunks_fixed = fixed_chunking(sample)
-    chunks_sentence = sentence_aware_chunking(sample)
-    chunks_semantic = semantic_chunking(sample)
-
-    # ----- Print fixed chunking
-    print("---------- Fixed chunking")
-    print("Avg chunk size : " + str(np.mean(chunk_size_fixed)))
-
-    plt.figure()
-    plt.hist(chunk_size_fixed, bins=20)
-    plt.xlabel('Chunk size (tokens)')
-    plt.ylabel('Count')
-    plt.savefig('fixed_chunk_distribution.png')
-
-    # ----- Print sentence aware chunking
-    print("---------- Sentence aware chunking")
-    print("Avg chunk size : " + str(np.mean(chunk_size_sentence)))
-
-    plt.figure()
-    plt.hist(chunk_size_sentence, bins=20)
-    plt.xlabel('Chunk size (tokens)')
-    plt.ylabel('Count')
-    plt.savefig('sentence_chunk_distribution.png')
-
-    # ----- Print Semantic aware chunking
-    print("---------- Semantic aware chunking")
-    print("Avg chunk size : " + str(np.mean(chunk_size_semantic)))
-    
-
-    plt.figure()
-    plt.hist(chunk_size_semantic, bins=20)
-    plt.xlabel('Chunk size (tokens)')
-    plt.ylabel('Count')
-    plt.savefig('semantic_chunk_distribution.png')
-
-    plt.figure()
-    plt.hist(similarities, bins=30)
-    plt.xlabel('Adjacent sentence cosine similarity')
-    plt.ylabel('Count')
-    plt.savefig('similarity_histogram.png')
+    return chunks, avg_chunk_size
