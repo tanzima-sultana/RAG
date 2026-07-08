@@ -5,8 +5,10 @@ from constants import DENSE, BM25, HYBRID
 from bm25_indexing import tokenize_chunk_text
 from anthropic_api import anthropic_msg_api
 
-from sentence_transformers import SentenceTransformer
-model = SentenceTransformer('all-MiniLM-L6-v2')
+from sentence_transformers import SentenceTransformer, CrossEncoder
+
+model = SentenceTransformer('all-MiniLM-L6-v2')          
+cross_encoder = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2') 
 
 def RETRIEVED_OUTPUT(chunk_id, retrieved_chunk_ids, qus, context, generated_ans, ground_truth_ans, k, cost, latency):
 
@@ -54,7 +56,7 @@ def reciprocal_rank_fusion(dense_chunk_ids, bm25_chunk_ids, k_const=60):
 
     return merged_chunk_ids
 
-def retrieve_chunks(retrieval_type, chunk_type, eval_set, chunks, indexing, bm25, k):
+def retrieve_chunks(retrieval_type, chunk_type, eval_set, chunks, indexing, bm25, k, re_ranking, top_k):
 
     print("retrieval.py - Retieval :", retrieval_type, ", Chunk type : ", chunk_type)
     retrieved_outputs = []
@@ -69,8 +71,12 @@ def retrieve_chunks(retrieval_type, chunk_type, eval_set, chunks, indexing, bm25
         print("query_embeddings shape - ", query_embeddings.shape)
 
         # 2. Find the closet k indices
-        distances, dense_indices = indexing.search(query_embeddings, k)
-        #print("indices shape - ", dense_indices.shape)
+        if re_ranking == 1:
+            distances, dense_indices = indexing.search(query_embeddings, top_k)
+            #print("indices shape - ", dense_indices.shape)
+        else:
+            distances, dense_indices = indexing.search(query_embeddings, k)
+            #print("indices shape - ", dense_indices.shape)
 
     # use this chunk_id to text map to retrieve chunk_text 
     # for dense and bm25, search_indices maintains same indexing of chunks, no need for mapping there
@@ -101,7 +107,13 @@ def retrieve_chunks(retrieval_type, chunk_type, eval_set, chunks, indexing, bm25
             # ----- For BM25
             tokenized_qus = tokenize_chunk_text(qus) 
             scores = bm25.get_scores(tokenized_qus) 
-            bm25_search_indices = np.argsort(scores)[::-1][:k]
+
+            bm25_search_indices = []
+            if re_ranking == 1:
+                bm25_search_indices = np.argsort(scores)[::-1][:top_k]  # top_k, descending order
+            else:
+                bm25_search_indices = np.argsort(scores)[::-1][:k]  # descending order, take top k
+
             # Retieve chunks
             bm25_retrieved_chunk_ids = []
             bm25_retrieved_chunk_texts =[]
@@ -109,9 +121,23 @@ def retrieve_chunks(retrieval_type, chunk_type, eval_set, chunks, indexing, bm25
                 bm25_retrieved_chunk_ids.append(chunks[j]['chunk_id'])
                 bm25_retrieved_chunk_texts.append(chunks[j]['chunk_text'])
             
-            # RRF and slice at k
-            retrieved_chunk_ids = reciprocal_rank_fusion(dense_retrieved_chunk_ids, bm25_retrieved_chunk_ids, k_const=60)[:k]
-            retrieved_chunk_texts = [chunk_id_to_text[cid] for cid in retrieved_chunk_ids]
+            # ----- re_ranking & K=20
+            if re_ranking == 1:
+                # Use K instaed of small k
+                temp_retrieved_chunk_ids = reciprocal_rank_fusion(dense_retrieved_chunk_ids, bm25_retrieved_chunk_ids, k_const=60)[:top_k]
+                temp_retrieved_chunk_texts = [chunk_id_to_text[cid] for cid in temp_retrieved_chunk_ids]
+
+                cross_encoder_scores = cross_encoder.predict([(qus, text) for text in temp_retrieved_chunk_texts])
+                # sort chunk_ids by score, descending, take top k
+                reranked = sorted(zip(temp_retrieved_chunk_ids, cross_encoder_scores), key=lambda x: x[1], reverse=True)
+                
+                retrieved_chunk_ids = [cid for cid, score in reranked][:k]
+                retrieved_chunk_texts = [chunk_id_to_text[cid] for cid in retrieved_chunk_ids]
+
+            else:
+                # RRF and slice at k
+                retrieved_chunk_ids = reciprocal_rank_fusion(dense_retrieved_chunk_ids, bm25_retrieved_chunk_ids, k_const=60)[:k]
+                retrieved_chunk_texts = [chunk_id_to_text[cid] for cid in retrieved_chunk_ids]
 
         # ----- Dense & BM25
         else:
@@ -121,13 +147,32 @@ def retrieve_chunks(retrieval_type, chunk_type, eval_set, chunks, indexing, bm25
             elif retrieval_type == BM25:
                 tokenized_qus = tokenize_chunk_text(qus) # Tokenize qus
                 scores = bm25.get_scores(tokenized_qus)  # one score per chunk, same order as chunks list
-                search_indices = np.argsort(scores)[::-1][:k]  # descending order, take top k
 
-            # Retieve chunks
-            for j in search_indices:
-                retrieved_chunk_ids.append(chunks[j]['chunk_id'])
-                retrieved_chunk_texts.append(chunks[j]['chunk_text'])
-        
+                if re_ranking == 1:
+                    search_indices = np.argsort(scores)[::-1][:top_k]  # descending order, top_k
+                else:
+                    search_indices = np.argsort(scores)[::-1][:k]  # descending order, take top k
+
+            if re_ranking == 1:
+                # already top_k is selected
+                # Retieve chunks
+                temp_retrieved_chunk_ids = []
+                temp_retrieved_chunk_texts = []
+                for j in search_indices:
+                    temp_retrieved_chunk_ids.append(chunks[j]['chunk_id'])
+                    temp_retrieved_chunk_texts.append(chunks[j]['chunk_text'])
+
+                cross_encoder_scores = cross_encoder.predict([(qus, text) for text in temp_retrieved_chunk_texts])
+                # sort chunk_ids by score, descending, take top k
+                reranked = sorted(zip(temp_retrieved_chunk_ids, cross_encoder_scores), key=lambda x: x[1], reverse=True)
+
+                retrieved_chunk_ids = [cid for cid, score in reranked][:k]
+                retrieved_chunk_texts = [chunk_id_to_text[cid] for cid in retrieved_chunk_ids]
+            else:
+                for j in search_indices:
+                    retrieved_chunk_ids.append(chunks[j]['chunk_id'])
+                    retrieved_chunk_texts.append(chunks[j]['chunk_text'])
+
 
         # Generate answer
         context = ' '.join(retrieved_chunk_texts) 

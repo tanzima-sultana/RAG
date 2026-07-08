@@ -1,7 +1,16 @@
+# Config files (both locations)
 config.py
+/local/config.py
+
+# Data and eval (both root and local)
+data/
+/local/data/
+eval/
+/local/eval/
+
+# Artifacts
 *.pkl
 *.npy
 __pycache__/
 .ipynb_checkpoints/
-eval/results/**/*_details.json
 .env

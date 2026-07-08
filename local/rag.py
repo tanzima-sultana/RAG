@@ -43,12 +43,19 @@ if __name__ == "__main__":
     # arg 4 : k = 3 by default
     k = int(sys.argv[4]) if len(sys.argv) > 4 else 3
 
+    # arg 5 : re_ranking
+    re_ranking = int(sys.argv[5]) if len(sys.argv) > 5 else 0
+
+    # arg 6 : re_ranking K
+    top_k = int(sys.argv[6]) if len(sys.argv) > 6 else 20
+
+    print("Dataset size : ", dataset_size, ", chunk type : ", chunk_type, ", retrieval type : ", retrieval_type, ", k : ", k)
+    print("re-ranking : ", re_ranking, ", top_k : ", top_k)
+
     # ----- 1. Load dataset
     dataset = load_processed_dataset()
     n_samples = dataset_size
     sample = dataset.select(range(n_samples)) 
-
-    print("Dataset size : ", dataset_size, ", chunk type : ", chunk_type, ", retrieval type : ", retrieval_type, ", k : ", k)
 
     # ----- 2. Chunking
     chunks = []
@@ -91,7 +98,8 @@ if __name__ == "__main__":
         if retrieval_type == DENSE:
             # ----- 6. Retrieve
             #retrieve_chunks(retrieval_type, chunk_type, eval_set, chunks, indexing, bm25, k)
-            retrieved_output = retrieve_chunks(retrieval_type, chunk_type, eval_set, chunks, indexing, None, k)
+            retrieved_output = retrieve_chunks(retrieval_type, chunk_type, eval_set, chunks, indexing, None, k,
+                                               re_ranking, top_k)
             # ----- 7. Evaluate
             eval_metrices = evaluate(retrieval_type, chunk_type, n_samples, retrieved_output,
                             use_faithfulness=False, use_relevancy=False, use_llm_correctness=False)
@@ -104,7 +112,8 @@ if __name__ == "__main__":
         if retrieval_type == BM25:
             # ----- 5. Retrieve
             #retrieve_chunks(retrieval_type, chunk_type, eval_set, chunks, indexing, bm25, k)
-            retrieved_output = retrieve_chunks(retrieval_type, chunk_type, eval_set, chunks, None, bm25, k)
+            retrieved_output = retrieve_chunks(retrieval_type, chunk_type, eval_set, chunks, None, bm25, k,
+                                               re_ranking, top_k)
             # ----- 6. Evaluate
             eval_metrices = evaluate(retrieval_type, chunk_type, n_samples, retrieved_output,
                             use_faithfulness=False, use_relevancy=False, use_llm_correctness=False)
@@ -112,7 +121,8 @@ if __name__ == "__main__":
     if retrieval_type == HYBRID:
         # ----- 5. Retrieve
         #retrieve_chunks(retrieval_type, chunk_type, eval_set, chunks, indexing, bm25, k)
-        retrieved_output = retrieve_chunks(retrieval_type, chunk_type, eval_set, chunks, indexing, bm25, k)
+        retrieved_output = retrieve_chunks(retrieval_type, chunk_type, eval_set, chunks, indexing, bm25, k,
+                                           re_ranking, top_k)
         # ----- 6. Evaluate
         eval_metrices = evaluate(retrieval_type, chunk_type, n_samples, retrieved_output,
                         use_faithfulness=False, use_relevancy=False, use_llm_correctness=False)
