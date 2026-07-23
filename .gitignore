@@ -3,10 +3,16 @@ config.py
 /local/config.py
 
 # Data and eval (both root and local)
+chunks/
 data/
-/local/data/
+embeddings/
 eval/
-/local/eval/
+indexing_FlatIndexIP/
+
+chunks/
+data/
+embeddings/
+eval/
 
 # Artifacts
 *.pkl

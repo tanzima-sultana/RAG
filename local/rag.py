@@ -11,7 +11,7 @@ import pickle
 
 from constants import FIXED, SENTENCE, SEMANTIC, DENSE, BM25, HYBRID
 from dataset import load_processed_dataset
-from spark_chunking import compute_chunks, fixed_chunking, sentence_aware_chunking, semantic_chunking
+from chunking import compute_chunks, fixed_chunking, sentence_aware_chunking, semantic_chunking
 from embedding import generate_embeddings
 from faiss_indexing import generate_FlatIndexIP
 from bm25_indexing import generate_bm25_indexing
