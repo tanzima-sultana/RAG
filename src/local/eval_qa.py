@@ -12,7 +12,7 @@ class EvalQA:
       self.chunking_type = chunking_type
       self.no_queries = no_queries
 
-      self.path = f"eval_qa/qa_{dataset_size}_{device}_{chunking_type}_{no_queries}"
+      self.path = f"eval_qa/qa_{no_queries}"
 
    def EVAL_QA(self, chunk_id, question, answer):
 

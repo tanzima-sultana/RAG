@@ -160,7 +160,7 @@ if __name__ == "__main__":
     else:
         retrieved_output = ret.retrieval_hybrid(faiss_index, bm25_index)
 
-    print(retrieved_output)
+    #print(retrieved_output)
     t7 = time.time() - s7
     print("time : ", t7)
 

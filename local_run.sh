@@ -3,18 +3,18 @@ source ~/pyenv/bin/activate
 export PYTHONPATH=$(pwd)
 
 MODE="local" # local, aws
-DEVICE="cpu" # cpu, cuda # for local, its cpu and gpu, for aws, its spark(cpu) and spark-gpu
+DEVICE="cuda" # cpu, cuda # for local, its cpu and gpu, for aws, its spark(cpu) and spark-gpu
 MODEL_NAME="all-MiniLM-L6-v2"
 DATASET_SIZE=1000
 CHUNKING_TYPE="fixed" #"fixed", "sentence", "semantic"
 MAX_CHUNK_SISZE=256
 FIX_CHUNK_OVERLAP=32
 SEMANTIC_THREASHOLD=0.3
-INDEXING_TYPE="hnsw" #flatip, ivf, hnsw
+INDEXING_TYPE="ivf" #flatip, ivf, hnsw
 NO_EVAL_QUERY=20
 K=5
-RETRIEVAL_TYPE="hybrid" #"dense", "bm25", "hybrid"
-RE_RANKING=0 # 0 = no rerank, 1 = rerank
+RETRIEVAL_TYPE="hybrid" #"bm25", "bm25", "hybrid"
+RE_RANKING=1 # 0 = no rerank, 1 = rerank
 RERANK_K=20
 
 OUTPUT_FILE="output.txt"
