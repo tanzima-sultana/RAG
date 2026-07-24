@@ -12,7 +12,11 @@ indexing_FlatIndexIP/
 chunks/
 data/
 embeddings/
-eval/
+index/
+evals/
+eval_qa/
+
+output.txt
 
 # Artifacts
 *.pkl
