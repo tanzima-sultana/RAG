@@ -3,12 +3,20 @@ import boto3
 from datasets import load_dataset, load_from_disk
 
 from config import LOCAL_DATASET, S3_DATASET, S3_BUCKET
-from constants import SEED, PROCESSED_DATA_PATH
+from constants import SEED, PROCESSED_DATA_PATH, LOCAL, AWS
+
+from src.dist import s3_utills
 
 class Dataset:
-    def __init__(self, size):
+    def __init__(self, mode, dataset_size):
         self.s3_client = boto3.client("s3")
-        self.size = size
+        self.mode = mode
+        self.dataset_size = dataset_size
+
+        self.path = f"{PROCESSED_DATA_PATH}/{self.dataset_size}.parquet"
+        if self.mode == AWS:
+            self.path = f"s3://{S3_BUCKET}/" + self.path
+
     
     def transform(self, example):
         return {
@@ -17,28 +25,54 @@ class Dataset:
             'text': example['text']
         }
     
-    # ------------ AWS -------------
-    def s3_key_exists(self, bucket, key):
+    def load_parquet_dataset_local(self):
+        if os.path.exists(self.path):
+            print("Loading parquet data from disk")
+            return self.path
+
         try:
-            self.s3_client.head_object(Bucket=bucket, Key=key)
-            return True
-        except self.s3_client.exceptions.ClientError:
-            return False
+            print("Create parquet dataset")
+            dataset_original = load_dataset("parquet", data_files={"train": LOCAL_DATASET}, split="train")
+            dataset_sample = dataset_original.filter(lambda x: len(x['text']) > 200).shuffle(seed=SEED).select(range(self.dataset_size))
+            dataset = dataset_sample.map(self.transform, remove_columns=dataset_sample.column_names)
+            dataset.to_parquet(self.path)
+        except Exception as e:
+            print(f"Dataset creation failed: {e}")
+            return None
 
+        if not os.path.exists(self.path):
+            print("Dataset write produced no output")
+            return None
+
+        return self.path
+    
+    # ------------ AWS -------------
+    
     def load_parquet_dataset_s3(self):
-        s3_key = f"data/{self.size}.parquet"
+        if s3_utills.s3_file_exists(self.path):
+            print(f"{self.path} already exists, loading from S3")
+            return self.path
 
-        if self.s3_key_exists(S3_BUCKET, s3_key):
-            print(f"s3://{S3_BUCKET}/{s3_key} already exists, loading from S3")
-            return load_dataset("parquet", data_files=f"s3://{S3_BUCKET}/{s3_key}", split="train")
+        try:
+            print(f"{self.path} not found, creating from raw Wikipedia data on S3")
+            dataset_original = load_dataset("parquet", data_files={"train": S3_DATASET}, split="train")
+            dataset_sample = dataset_original.filter(lambda x: len(x['text']) > 200).shuffle(seed=SEED).select(range(self.dataset_size))
+            dataset = dataset_sample.map(self.transform, remove_columns=dataset_sample.column_names)
+            dataset.to_parquet(self.path)
+        except Exception as e:
+            print(f"Dataset creation failed: {e}")
+            return None
 
-        print(f"s3://{S3_BUCKET}/{s3_key} not found, creating from raw Wikipedia data on S3")
+        if not s3_utills.s3_file_exists(self.path):
+            print("Dataset write produced no output")
+            return None
 
-        dataset_original = load_dataset("parquet", data_files={"train": S3_DATASET}, split="train")
-        dataset_sample = dataset_original.filter(lambda x: len(x['text']) > 200).shuffle(seed=SEED).select(range(self.size))
-        dataset = dataset_sample.map(self.transform, remove_columns=dataset_sample.column_names)
+        return self.path
+    
+    def load_parquet_dataset(self):
+        #print("Load dataset")
+        if self.mode == LOCAL:
+            return self.load_parquet_dataset_local()
+        else:
+            return self.load_parquet_dataset_s3()
 
-        print(f"Uploading to s3://{S3_BUCKET}/{s3_key}")
-        dataset.to_parquet(f"s3://{S3_BUCKET}/{s3_key}")
-
-        return dataset

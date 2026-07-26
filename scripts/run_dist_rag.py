@@ -1,12 +1,16 @@
 import argparse
 import time
 import torch
+import sys
 
-from constants import LOCAL, CPU
+from constants import CPU, DENSE, BM25, HYBRID
 
-from src.dataset import Dataset
-from src.chunking import Chunking
+from src.dist.dataset import Dataset
+from src.dist.chunking import Chunking
+from src.dist.embedding import Embedding
+from src.dist.indexing import Indexing
 
+from src.eval_qa import EvalQA
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Distributed RAG pipeline")
@@ -14,11 +18,17 @@ def parse_args():
     parser.add_argument("--mode", type=str, required=True,
                          choices=["local", "aws"],
                          help="Local or distributed mode")
+    parser.add_argument("--num_partition", type=int, default=4,
+                         help="Number of partitions")
     parser.add_argument("--device", type=str, required=True,
                          choices=["cpu", "cuda"],
                          help="CPU or GPU")
+    parser.add_argument("--model_name", type=str, required=True,
+                         help="Transformer model name")
     parser.add_argument("--dataset_size", type=int, required=True,
                          help="Number of documents to process")
+    parser.add_argument("--batch_size", type=int, required=True,
+                         help="Number of batch to process")
     parser.add_argument("--chunking_type", type=str, required=True,
                          choices=["fixed", "sentence", "semantic"],
                          help="Chunking strategy to use")
@@ -28,6 +38,11 @@ def parse_args():
                          help="Token overlap for fixed chunking")
     parser.add_argument("--semantic_threshold", type=float, default=0.5,
                          help="Cosine similarity threshold for semantic chunking split point")
+    parser.add_argument("--indexing_type", type=str, required=True,
+                         choices=["flatip", "ivf", "hnsw"],
+                         help="Indexing type to use")
+    parser.add_argument("--num_eval_query", type=int, default=5,
+                         help="Number of evaluation query")
     parser.add_argument("--k", type=int, default=5,
                          help="Number of chunks to retrieve for eval")
     parser.add_argument("--retrieval_type", type=str, required=True,
@@ -45,7 +60,7 @@ def parse_args():
 
 if __name__ == "__main__":
 
-    print("\n ------------- Dist RAG ----------- \n")
+    print("\n ------------- Dist RAG -------- \n")
     s1 = time.time()
 
     # ---------------- 1. args
@@ -53,12 +68,17 @@ if __name__ == "__main__":
     print(args)
 
     mode = args.mode
+    num_partition = args.num_partition
     device = args.device
+    model_name = args.model_name
     dataset_size = args.dataset_size
+    batch_size = args.batch_size
     chunking_type = args.chunking_type
     max_chunk_size = args.max_chunk_size
     fix_chunk_overlap = args.fix_chunk_overlap
     semantic_threshold = args.semantic_threshold
+    indexing_type = args.indexing_type
+    num_eval_query = args.num_eval_query
     k = args.k
     retrieval_type = args.retrieval_type
     reranking = args.reranking
@@ -68,30 +88,82 @@ if __name__ == "__main__":
         device = CPU
 
     # ----- 2. Load dataset
+    print("\n ------- Load dataset -------- \n")
     s2 = time.time()
 
-    df = Dataset(dataset_size)
-    dataset = None
+    df = Dataset(mode, dataset_size)
+    dataset_path = df.load_parquet_dataset()
 
-    if mode == LOCAL:
-        dataset = df.load_parquet_dataset()
-    else:
-        dataset = df.load_parquet_dataset_s3()
+    if not dataset_path:
+        print("Dataset failed, exiting")
+        sys.exit(1)
 
     t2 = time.time() - s2
-    print("\n----- Dataset load time : ", t2)
+    print("time : ", t2)
 
+    
     # -------------------- 3. Chunking
+    print("\n ------- Chunking -------- \n")
+    print("Type : ", chunking_type)
 
     s3 = time.time()
 
-    ch = Chunking(dataset, dataset_size, mode, device, chunking_type)
-    chunks, avg_chunk_size = ch.compute_chunks(max_chunk_size, fix_chunk_overlap, semantic_threshold)
+    ch = Chunking(num_partition, mode, model_name, dataset_path, dataset_size, device, chunking_type)
+    chunk_path = ch.compute_chunks(max_chunk_size, fix_chunk_overlap, semantic_threshold)
+
+    if not chunk_path:
+        print("Chunking failed, exiting")
+        sys.exit(1)
 
     t3 = time.time() - s3
-    print("\n----- Chunking time : ", t3)
+    print("time : ", t3)
 
+    
+    # ----------- 4. Embedding 
+    print("\n----- Embedding ------------\n")
+    s4 = time.time()
 
-    # --------------------
-    t1 = time.time() - s1
-    print("\n----- Total time : ", t1)
+    em = Embedding(num_partition, mode, model_name, dataset_size, device, chunking_type)
+    embedding_path = em.generate_embeddings(chunk_path, batch_size)
+
+    if not embedding_path:
+        print("Embedding failed, exiting")
+        sys.exit(1)
+
+    t4 = time.time() - s4
+    print("time : ", t4)
+
+    # ----------- 5. Index 
+    print("\n----- Indexing------------\n")
+    s5 = time.time()
+
+    idx = Indexing(mode, dataset_size, device, chunking_type, indexing_type)
+
+    faiss_index = None
+    if retrieval_type in (DENSE, HYBRID):
+        print("FAISS Indexing : ", indexing_type)
+        faiss_index = idx.generate_faiss_index(embedding_path)
+    
+    bm25_index = None 
+    if retrieval_type in (BM25, HYBRID):
+        print("Bm25 Indexing")
+        bm25_index = idx.generate_bm25_index(chunk_path)
+
+    if not faiss_index and not bm25_index: 
+        print("Index failed, exiting")
+        sys.exit(1)
+
+    t5 = time.time() - s5
+    print("time : ", t5)
+
+    # ----------- 6. Evaluation Qus-Ans Set
+    print("\n----- Evaluation Qus-Ans Set------------\n")
+    s6 = time.time()
+
+    ev = EvalQA(dataset_size, device, chunking_type, num_eval_query)
+    eval_set = ev.build_eval_set(chunks, min_chunk_size=100)
+
+    t6 = time.time() - s6
+    print("time : ", t6)
+
+    

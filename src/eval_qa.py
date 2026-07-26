@@ -1,18 +1,25 @@
 import random
 import os
 import json
+import io
+import boto3
 
-from constants import SEED
+from config import S3_BUCKET
+from constants import SEED, LOCAL, AWS
+from src.dist import s3_utills
 from src.local.anthropic_api import AnthropicAPI
 
 class EvalQA:
-   def __init__(self,dataset_size, device, chunking_type, no_queries):
+   def __init__(self, mode, dataset_size, device, chunking_type, no_queries):
+      self.mode = mode
       self.dataset_size = dataset_size
       self.device = device
       self.chunking_type = chunking_type
       self.no_queries = no_queries
 
       self.path = f"eval_qa/qa_{no_queries}"
+      if self.mode == AWS:
+            self.path = f"s3://{S3_BUCKET}/" + self.path
 
    def EVAL_QA(self, chunk_id, question, answer):
 
@@ -77,13 +84,30 @@ class EvalQA:
       api_response = an.anthropic_msg_api(prompt)
       return api_response['response']
    
+
+   def is_exists(self):
+        if self.mode == AWS:
+            return s3_utills.s3_file_exists(self.path)
+        else:
+            return os.path.exists(self.path)
+        
    def build_eval_set(self, chunks, min_chunk_size):
-      if os.path.exists(self.path):
-         with open(self.path, 'r') as f:
-               print("Loading eval_qa from disk")
-               eval_set = json.load(f)
-         if len(eval_set) == self.no_queries:
+      if self.is_exists():
+         if self.mode == AWS:
+            bucket, key = s3_utills.get_s3_bucket_key(self.path)
+            buffer = io.BytesIO()
+            boto3.client('s3').download_fileobj(bucket, key, buffer)
+            buffer.seek(0)
+            print("Loading eval_qa from disk")
+            eval_set = json.load(buffer)
+            if len(eval_set) == self.no_queries:
                return eval_set
+         else:
+            with open(self.path, 'r') as f:
+                  print("Loading eval_qa from disk")
+                  eval_set = json.load(f)
+            if len(eval_set) == self.no_queries:
+                  return eval_set
 
       sample_chunks = self.get_sample_chunks(chunks, min_chunk_size, self.no_queries)
       

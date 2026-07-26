@@ -8,12 +8,12 @@ from src.local.dataset import Dataset
 from src.local.chunking import Chunking
 from src.local.embedding import Embedding
 from src.local.indexing import Indexing
-from src.local.eval_qa import EvalQA
+from src.eval_qa import EvalQA
 from src.local.retrieval import Retrieval
 from src.local.evaluation import Evaluation
 
 def parse_args():
-    parser = argparse.ArgumentParser(description="Distributed RAG pipeline")
+    parser = argparse.ArgumentParser(description="RAG pipeline")
 
     parser.add_argument("--mode", type=str, required=True,
                          choices=["local", "aws"],

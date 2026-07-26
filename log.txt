@@ -1,0 +1,26 @@
+
+ ------------- Dist RAG -------- 
+
+Namespace(mode='local', num_partition=4, device='cpu', model_name='all-MiniLM-L6-v2', dataset_size=1000, batch_size=256, chunking_type='fixed', max_chunk_size=256, fix_chunk_overlap=32, semantic_threshold=0.3, indexing_type='ivf', num_eval_query=20, k=5, retrieval_type='dense', reranking=0, rerank_k=20)
+
+ ------- Load dataset -------- 
+
+Loading parquet data from disk
+time :  0.003051280975341797
+
+ ------- Chunking -------- 
+
+Type :  fixed
+loading chunking from disk
+time :  6.67572021484375e-06
+
+----- Embedding ------------
+
+loading embeddings from disk
+time :  5.245208740234375e-06
+
+----- Indexing------------
+
+FAISS Indexing :  ivf
+Load indexing ivf from disk
+time :  0.002510547637939453
