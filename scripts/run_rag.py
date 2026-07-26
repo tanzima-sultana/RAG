@@ -138,7 +138,7 @@ if __name__ == "__main__":
     print("\n----- Evaluation Qus-Ans Set------------\n")
     s6 = time.time()
 
-    ev = EvalQA(dataset_size, device, chunking_type, no_eval_query)
+    ev = EvalQA(mode, dataset_size, device, chunking_type, no_eval_query)
     eval_set = ev.build_eval_set(chunks, min_chunk_size=100)
 
     t6 = time.time() - s6

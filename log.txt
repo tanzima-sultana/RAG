@@ -6,21 +6,26 @@ Namespace(mode='local', num_partition=4, device='cpu', model_name='all-MiniLM-L6
  ------- Load dataset -------- 
 
 Loading parquet data from disk
-time :  0.003051280975341797
+time :  0.003490924835205078
 
  ------- Chunking -------- 
 
 Type :  fixed
 loading chunking from disk
-time :  6.67572021484375e-06
+time :  7.152557373046875e-06
 
 ----- Embedding ------------
 
 loading embeddings from disk
-time :  5.245208740234375e-06
+time :  5.9604644775390625e-06
 
 ----- Indexing------------
 
 FAISS Indexing :  ivf
 Load indexing ivf from disk
-time :  0.002510547637939453
+time :  0.0024640560150146484
+
+----- Evaluation Qus-Ans Set------------
+
+Loading eval_qa from disk
+time :  0.0003712177276611328

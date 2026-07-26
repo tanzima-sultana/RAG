@@ -160,8 +160,12 @@ if __name__ == "__main__":
     print("\n----- Evaluation Qus-Ans Set------------\n")
     s6 = time.time()
 
-    ev = EvalQA(dataset_size, device, chunking_type, num_eval_query)
-    eval_set = ev.build_eval_set(chunks, min_chunk_size=100)
+    ev = EvalQA(mode, dataset_size, device, chunking_type, num_eval_query)
+    eval_set = ev.get_eval_set()
+
+    if not eval_set:
+        print("Eval set failed, exiting")
+        sys.exit(1)
 
     t6 = time.time() - s6
     print("time : ", t6)

@@ -90,8 +90,8 @@ class EvalQA:
             return s3_utills.s3_file_exists(self.path)
         else:
             return os.path.exists(self.path)
-        
-   def build_eval_set(self, chunks, min_chunk_size):
+   
+   def get_eval_set(self):
       if self.is_exists():
          if self.mode == AWS:
             bucket, key = s3_utills.get_s3_bucket_key(self.path)
@@ -108,6 +108,15 @@ class EvalQA:
                   eval_set = json.load(f)
             if len(eval_set) == self.no_queries:
                   return eval_set
+      return None
+
+   def build_eval_set(self, chunks, min_chunk_size):
+      
+      eval_set = []
+      
+      eval_set = self.get_eval_set()
+      if eval_set:
+          return eval_set
 
       sample_chunks = self.get_sample_chunks(chunks, min_chunk_size, self.no_queries)
       
@@ -115,8 +124,6 @@ class EvalQA:
       raw_response = self.generate_qa_batch(sample_chunks)
       # parsed - {chunk_id -> (q, a)}
       parsed = self.parse_qa_batch_response(raw_response)
-
-      eval_set = []
       # chunk_id and chunk map
       chunks_by_id = {c['chunk_id']: c for c in sample_chunks}
 
