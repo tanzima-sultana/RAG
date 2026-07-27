@@ -7,7 +7,7 @@ import boto3
 from config import S3_BUCKET
 from constants import SEED, LOCAL, AWS
 from src.dist import s3_utills
-from src.local.anthropic_api import AnthropicAPI
+from src.anthropic_api import AnthropicAPI
 
 class EvalQA:
    def __init__(self, mode, dataset_size, device, chunking_type, no_queries):

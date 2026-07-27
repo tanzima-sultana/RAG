@@ -7,10 +7,10 @@ from constants import LOCAL, CPU, DENSE, BM25, HYBRID
 from src.local.dataset import Dataset
 from src.local.chunking import Chunking
 from src.local.embedding import Embedding
-from src.local.indexing import Indexing
+from src.indexing import Indexing
 from src.eval_qa import EvalQA
-from src.local.retrieval import Retrieval
-from src.local.evaluation import Evaluation
+from src.retrieval import Retrieval
+from src.evaluation import Evaluation
 
 def parse_args():
     parser = argparse.ArgumentParser(description="RAG pipeline")
@@ -119,7 +119,7 @@ if __name__ == "__main__":
     print("\n----- Indexing------------\n")
     s5 = time.time()
 
-    idx = Indexing(dataset_size, device, chunking_type, indexing_type)
+    idx = Indexing(mode, dataset_size, device, chunking_type, indexing_type)
 
     faiss_index = None
     if retrieval_type in (DENSE, HYBRID):
@@ -172,9 +172,8 @@ if __name__ == "__main__":
     use_relevancy=False
     use_llm_correctness=False
 
-    eval = Evaluation(dataset_size, device, chunking_type, retrieval_type, model_name)
-    eval_summary = eval.evaluate(k, retrieved_output, use_faithfulness, use_relevancy, use_llm_correctness)
-    print(eval_summary)
+    eval = Evaluation(mode, dataset_size, device, chunking_type, retrieval_type, model_name)
+    eval.evaluate(k, retrieved_output, use_faithfulness, use_relevancy, use_llm_correctness)
     
     t8 = time.time() - s8
     print("time : ", t8)

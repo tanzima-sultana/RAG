@@ -20,8 +20,8 @@ class Indexing:
         self.chunking_type = chunking_type 
         self.indexing_type = indexing_type
 
-        self.faiss_path = f"index/idx_{dataset_size}_{device}_{chunking_type}_{indexing_type}"
-        self.bm25_path = f"index/bm25_{dataset_size}_{device}_{chunking_type}"
+        self.faiss_path = f"index/idx_{mode}_{dataset_size}_{device}_{chunking_type}_{indexing_type}"
+        self.bm25_path = f"index/bm25_{mode}_{dataset_size}_{device}_{chunking_type}"
 
         if mode == AWS:
             self.faiss_path = f"s3://{S3_BUCKET}/" + self.faiss_path

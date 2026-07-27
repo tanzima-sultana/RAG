@@ -1,7 +1,7 @@
 from sentence_transformers import SentenceTransformer, CrossEncoder
 import numpy as np
 import time
-from src.local.anthropic_api import AnthropicAPI
+from src.anthropic_api import AnthropicAPI
 
 # Eval Set format
 #'chunk_id': chunk_id,
@@ -24,10 +24,11 @@ class Retrieval:
       self.model = SentenceTransformer(self.model_name, device=self.device)
       self.cross_encoder = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2') 
    
-   def RETRIEVED_OUTPUT(self, chunk_id, retrieved_chunk_ids, qus, context, generated_ans, ground_truth_ans, k, cost, latency):
+   def RETRIEVED_OUTPUT(self, chunk_id, retrieved_chunk_ids, retrieved_chunk_texts, qus, context, generated_ans, ground_truth_ans, k, cost, latency):
       return {
          'chunk_id' : chunk_id,
          'retrieved_chunk_ids' : retrieved_chunk_ids,
+         'retrieved_chunk_texts' : retrieved_chunk_texts,
          'qus': qus,
          'context': context,
          'generated_ans': generated_ans,
@@ -151,7 +152,7 @@ class Retrieval:
          
          # 4. Create context for each eval question
          context = ' '.join(retrieved_chunk_texts)
-         temp_outputs.append(self.RETRIEVED_OUTPUT(chunk_id, retrieved_chunk_ids, qus, context, "", ground_truth_ans, self.k, "", ""))
+         temp_outputs.append(self.RETRIEVED_OUTPUT(chunk_id, retrieved_chunk_ids, retrieved_chunk_texts, qus, context, "", ground_truth_ans, self.k, "", ""))
       
 
       # 5. Use retrieved_outputs for batch API processing and update its empty field
@@ -173,7 +174,7 @@ class Retrieval:
                print(f"WARNING: no answer returned for chunk_id {out['chunk_id']}")
             
             retrieved_outputs.append(self.RETRIEVED_OUTPUT(
-               out['chunk_id'], out['retrieved_chunk_ids'], out['qus'], out['context'],
+               out['chunk_id'], out['retrieved_chunk_ids'], out['retrieved_chunk_texts'], out['qus'], out['context'],
                generated_ans, out['ground_truth_ans'], out['k'],
                api_response['cost'], api_response['latency']
             ))
@@ -239,7 +240,7 @@ class Retrieval:
          
          # 4. Create context for each eval question
          context = ' '.join(retrieved_chunk_texts)
-         temp_outputs.append(self.RETRIEVED_OUTPUT(chunk_id, retrieved_chunk_ids, qus, context, "", ground_truth_ans, self.k, "", ""))
+         temp_outputs.append(self.RETRIEVED_OUTPUT(chunk_id, retrieved_chunk_ids, retrieved_chunk_texts, qus, context, "", ground_truth_ans, self.k, "", ""))
 
       # 5. Use retrieved_outputs for batch API processing and update its empty field
       batch_size = 5
@@ -260,7 +261,7 @@ class Retrieval:
                print(f"WARNING: no answer returned for chunk_id {out['chunk_id']}")
             
             retrieved_outputs.append(self.RETRIEVED_OUTPUT(
-               out['chunk_id'], out['retrieved_chunk_ids'], out['qus'], out['context'],
+               out['chunk_id'], out['retrieved_chunk_ids'], out['retrieved_chunk_texts'], out['qus'], out['context'],
                generated_ans, out['ground_truth_ans'], out['k'],
                api_response['cost'], api_response['latency']
             ))
@@ -375,7 +376,7 @@ class Retrieval:
          
          # 4. Create context for each eval question
          context = ' '.join(retrieved_chunk_texts)
-         temp_outputs.append(self.RETRIEVED_OUTPUT(chunk_id, retrieved_chunk_ids, qus, context, "", ground_truth_ans, self.k, "", ""))
+         temp_outputs.append(self.RETRIEVED_OUTPUT(chunk_id, retrieved_chunk_ids, retrieved_chunk_texts, qus, context, "", ground_truth_ans, self.k, "", ""))
       
 
       # 5. Use retrieved_outputs for batch API processing and update its empty field
@@ -397,7 +398,7 @@ class Retrieval:
                print(f"WARNING: no answer returned for chunk_id {out['chunk_id']}")
             
             retrieved_outputs.append(self.RETRIEVED_OUTPUT(
-               out['chunk_id'], out['retrieved_chunk_ids'], out['qus'], out['context'],
+               out['chunk_id'], out['retrieved_chunk_ids'], out['retrieved_chunk_texts'], out['qus'], out['context'],
                generated_ans, out['ground_truth_ans'], out['k'],
                api_response['cost'], api_response['latency']
             ))

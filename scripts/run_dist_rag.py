@@ -2,15 +2,18 @@ import argparse
 import time
 import torch
 import sys
+import pyarrow.parquet as pq
 
 from constants import CPU, DENSE, BM25, HYBRID
 
 from src.dist.dataset import Dataset
 from src.dist.chunking import Chunking
 from src.dist.embedding import Embedding
-from src.dist.indexing import Indexing
 
+from src.indexing import Indexing
 from src.eval_qa import EvalQA
+from src.retrieval import Retrieval
+from src.evaluation import Evaluation
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Distributed RAG pipeline")
@@ -169,5 +172,52 @@ if __name__ == "__main__":
 
     t6 = time.time() - s6
     print("time : ", t6)
+
+    # ----------- 7. Retrival
+    print("\n----- Retrieval------------\n")
+    print("Type : ", retrieval_type)
+    s7 = time.time()
+
+    # Read chunks
+    table = pq.read_table(chunk_path)
+    chunks = table.to_pylist()
+
+    dry_run = True
+    ret = Retrieval(dry_run, retrieval_type, chunks, eval_set, k, reranking, rerank_k, model_name, device)
+
+    retrieved_output = None 
+    if retrieval_type == DENSE:
+        retrieved_output = ret.retrieval_dense(faiss_index)
+    elif retrieval_type == BM25:
+        retrieved_output = ret.retrieval_bm25(bm25_index)
+    else:
+        retrieved_output = ret.retrieval_hybrid(faiss_index, bm25_index)
+
+    #print(retrieved_output)
+    if not retrieved_output:
+        print("Retrival failed, exiting")
+        sys.exit(1)
+
+    
+    t7 = time.time() - s7
+    print("time : ", t7)
+
+    # ----------- 8. Evaluation 
+    print("\n----- Evaluation ------------\n")
+    s8 = time.time()
+
+    use_faithfulness=False
+    use_relevancy=False
+    use_llm_correctness=False
+
+    eval = Evaluation(mode, dataset_size, device, chunking_type, retrieval_type, model_name)
+    eval.evaluate(k, retrieved_output, use_faithfulness, use_relevancy, use_llm_correctness)
+    
+    t8 = time.time() - s8
+    print("time : ", t8)
+
+    # --------------------
+    t1 = time.time() - s1
+    print("\n----- Total time : ", t1)
 
     

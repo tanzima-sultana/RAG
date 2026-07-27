@@ -1,3 +1,4 @@
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
 
  ------------- Dist RAG -------- 
 
@@ -6,26 +7,190 @@ Namespace(mode='local', num_partition=4, device='cpu', model_name='all-MiniLM-L6
  ------- Load dataset -------- 
 
 Loading parquet data from disk
-time :  0.003490924835205078
+time :  0.0038208961486816406
 
  ------- Chunking -------- 
 
 Type :  fixed
 loading chunking from disk
-time :  7.152557373046875e-06
+time :  8.106231689453125e-06
 
 ----- Embedding ------------
 
 loading embeddings from disk
-time :  5.9604644775390625e-06
+time :  6.198883056640625e-06
 
 ----- Indexing------------
 
 FAISS Indexing :  ivf
 Load indexing ivf from disk
-time :  0.0024640560150146484
+time :  0.002325296401977539
 
 ----- Evaluation Qus-Ans Set------------
 
 Loading eval_qa from disk
-time :  0.0003712177276611328
+time :  6.532669067382812e-05
+
+----- Retrieval------------
+
+Type :  dense
+Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]Loading weights: 100%|██████████| 103/103 [00:00<00:00, 16711.67it/s]
+Loading weights:   0%|          | 0/105 [00:00<?, ?it/s]Loading weights: 100%|██████████| 105/105 [00:00<00:00, 4577.36it/s]
+
+ Dense Retrieval with reranking :  0 , and rerank_k :  20
+query_embeddings shape -  (20, 384)
+batch API response time :  5.245208740234375e-06
+batch API response time :  2.384185791015625e-06
+batch API response time :  1.9073486328125e-06
+batch API response time :  1.430511474609375e-06
+time :  8.73407530784607
+
+----- Evaluation ------------
+
+Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]Loading weights: 100%|██████████| 103/103 [00:00<00:00, 8055.74it/s]
+Evaluation
+ Qus :  Where did George F. Weber first encounter Murrill after years of not knowing his whereabouts?
+Generated ans :  MOCK_ANSWER
+Ground truth ans :  Weber first encountered Murrill at the Tin Can Tourist Camp, a Gainesville resort, in the recreation hall where Murrill was performing a piano concert for tourists.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.058230236172676086
+Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
+Cost :  0
+Latency :  0
+ Qus :  How many hits did Charles Jamieson record in 1923, and how did that rank in the American League?
+Generated ans :  MOCK_ANSWER
+Ground truth ans :  Jamieson recorded a career-high 222 hits in 1923, leading the American League.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 -0.009705448523163795
+Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
+Cost :  0
+Latency :  0
+ Qus :  What happened to East Carolina coach John Christenbury during World War II?
+Generated ans :  MOCK_ANSWER
+Ground truth ans :  Coach Christenbury was killed in an explosion at Port Chicago, California on July 1, 1944.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 -0.0546254962682724
+Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
+Cost :  0
+Latency :  0
+ Qus :  What effect does electron irradiation have on polyolefin in the heat-shrinkable sleeve manufacturing process?
+Generated ans :  MOCK_ANSWER
+Ground truth ans :  Electron irradiation cross-links the polyolefin, improving its molecular structure so it performs more like a tough, heat-resistant, elastic material or rubber rather than a plastic material.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 -0.03674644976854324
+Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
+Cost :  0
+Latency :  0
+ Qus :  What did Chrissie do to support Vicki in her mother's absence?
+Generated ans :  MOCK_ANSWER
+Ground truth ans :  Chrissie actively took on the role of mother to Vicki, helping her apply to art college and watching over her romantic relationships, since Vicki's real mother was in the USA.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.02706952765583992
+Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
+Cost :  0
+Latency :  0
+ Qus :  In what year was the Herpetological Society of Finland founded?
+Generated ans :  MOCK_ANSWER
+Ground truth ans :  The Herpetological Society of Finland was founded in 1992.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 -0.011479523032903671
+Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
+Cost :  0
+Latency :  0
+ Qus :  When was Gemporia Lifestyle launched?
+Generated ans :  MOCK_ANSWER
+Ground truth ans :  Gemporia Lifestyle was launched on 8 July 2020.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.08092077076435089
+Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
+Cost :  0
+Latency :  0
+ Qus :  What was the ship renamed to on 1 September 1965, and what role did it take on?
+Generated ans :  MOCK_ANSWER
+Ground truth ans :  The ship was renamed Vanguard on 1 September 1965 and was placed in service as USNS Vanguard (T-AGM-19), designed to be a seagoing missile tracking station.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.021969474852085114
+Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
+Cost :  0
+Latency :  0
+ Qus :  Why did the judge's actions in the Bank Julius Baer v. WikiLeaks case attract public attention?
+Generated ans :  MOCK_ANSWER
+Ground truth ans :  The judge's actions roused media and cyber-liberties groups to defend WikiLeaks' rights under the First Amendment and brought renewed scrutiny to the documents the bank hoped to shield.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.019467588514089584
+Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
+Cost :  0
+Latency :  0
+ Qus :  What role did Rajeev Khandelwal play in the film Samrat & Co.?
+Generated ans :  MOCK_ANSWER
+Ground truth ans :  He played the role of Samrat Tilakdhari, a detective who is approached by a lady with a strange case.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.06446114182472229
+Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
+Cost :  0
+Latency :  0
+ Qus :  When did Otwock railway station first open?
+Generated ans :  MOCK_ANSWER
+Ground truth ans :  Otwock station opened in 1877, together with the Vistula River Railroad.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 -0.05671669542789459
+Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
+Cost :  0
+Latency :  0
+ Qus :  What is the calcium carbonate content of the Vanport limestone layer found around Rose Point?
+Generated ans :  MOCK_ANSWER
+Ground truth ans :  The Vanport limestone layer has a 93.6% content of calcium carbonate.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 -0.012494411319494247
+Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
+Cost :  0
+Latency :  0
+ Qus :  In what inning did Rick Camp hit his famous home run against the New York Mets, and off which pitcher?
+Generated ans :  MOCK_ANSWER
+Ground truth ans :  Rick Camp hit his game-tying home run in the 18th inning off Tom Gorman.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.03629207983613014
+Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
+Cost :  0
+Latency :  0
+ Qus :  When did chariot use make its way into Egypt, and what event brought it there?
+Generated ans :  MOCK_ANSWER
+Ground truth ans :  Chariot use made its way into Egypt around 1650 BCE during the Hyksos invasion of Egypt and the establishment of the fourteenth dynasty.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 -0.0020444681867957115
+Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
+Cost :  0
+Latency :  0
+ Qus :  What sustainability-related extracurricular activities are available at the school?
+Generated ans :  MOCK_ANSWER
+Ground truth ans :  The sustainability activities available include the Iyilik Bone Marrow Project, Nature Club, Permaculture, and World Wildlife Fund.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 -0.07005519419908524
+Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
+Cost :  0
+Latency :  0
+ Qus :  What cash prize was awarded to people who submitted trivia items that received five stars from the panel of judges?
+Generated ans :  MOCK_ANSWER
+Ground truth ans :  A cash prize of 1,000,000 won was awarded for submitted items that received five stars.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.13738825917243958
+Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
+Cost :  0
+Latency :  0
+ Qus :  What was the score of the 1973 football game between East Carolina and UNC in Chapel Hill?
+Generated ans :  MOCK_ANSWER
+Ground truth ans :  UNC won the 1973 game 28–27.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.018679864704608917
+Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
+Cost :  0
+Latency :  0
+ Qus :  Who donated $1 million to East Carolina that led to Ficklen Stadium being renamed?
+Generated ans :  MOCK_ANSWER
+Ground truth ans :  Ronald and Mary Ellen Dowdy, a real estate developer in Orlando, Florida, donated $1 million, leading to the stadium being renamed Dowdy–Ficklen Stadium in 1994.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.06410638988018036
+Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
+Cost :  0
+Latency :  0
+ Qus :  Who is the other bodybuilder besides Danny Padilla to have won both the America and the Universe titles in the same year?
+Generated ans :  MOCK_ANSWER
+Ground truth ans :  Frank Zane is the other man to have won both the America and the Universe in the same year.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.06832300871610641
+Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
+Cost :  0
+Latency :  0
+ Qus :  On what date did Bach first perform the cantata BWV 164, and for which Sunday was it composed?
+Generated ans :  MOCK_ANSWER
+Ground truth ans :  Bach first performed the cantata on 26 August 1725, composed for the 13th Sunday after Trinity.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 -0.05528535693883896
+Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
+Cost :  0
+Latency :  0
+total cost :  0 , total latency :  0
+recall, avg ans faithfulness, avg ans releavncy, avg_ans_lmm_correctness :  0.0 0.0 0.0 0.0
+time :  3.5012285709381104
+
+----- Total time :  12.427381038665771

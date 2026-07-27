@@ -2,12 +2,17 @@
 import numpy as np
 import json
 import os
-from src.local.anthropic_api import AnthropicAPI
+import boto3 
+from src.anthropic_api import AnthropicAPI
+from src.dist import s3_utills
 
+from config import S3_BUCKET
+from constants import LOCAL, AWS
 from sentence_transformers import SentenceTransformer
 
 class Evaluation:
-    def __init__(self, dataset_size, device, chunking_type, retrieval_type, model_name):
+    def __init__(self, mode, dataset_size, device, chunking_type, retrieval_type, model_name):
+        self.mode = mode
         self.dataset_size = dataset_size
         self.device = device
         self.chunking_type = chunking_type
@@ -15,7 +20,12 @@ class Evaluation:
         self.model_name = model_name
 
         self.model = SentenceTransformer(model_name)
+
+        self.anthropic = AnthropicAPI(anthropic_model="claude-sonnet-4-6", max_tokens=4000)
+
         self.path = f"evals/ev_{dataset_size}_{device}_{chunking_type}_{retrieval_type}"
+        if self.mode == AWS:
+            self.path = f"s3://{S3_BUCKET}/" + self.path
     
     def EVAL_METRICES(self, k, recall, mrr, precision_at_k, sas_score,
                     score_faithfulness, score_relevancy, score_llm_correctness, cost, latency):
@@ -44,8 +54,7 @@ class Evaluation:
 
         Answer:"""
 
-        an = AnthropicAPI(anthropic_model="claude-sonnet-4-6", max_tokens=4000)
-        return an.anthropic_msg_api(prompt)
+        return self.anthropic.anthropic_msg_api(prompt)
     
     # ----- Answer Faithfulness 
     def judge_faithfulness(self, generated_answer, context):
@@ -59,7 +68,7 @@ class Evaluation:
 
         Is the answer faithful to the context?"""
         
-        api_response = anthropic_msg_api(prompt)
+        api_response = self.anthropic.anthropic_msg_api(prompt)
         judgement = api_response['response']
 
         if "not faithful" in judgement.lower():
@@ -81,7 +90,7 @@ class Evaluation:
 
         Is the answer relevant to the question?"""
         
-        api_response = anthropic_msg_api(prompt)
+        api_response = self.anthropic.anthropic_msg_api(prompt)
         judgement = api_response['response']
 
         if "not relevant" in judgement.lower():
@@ -103,7 +112,7 @@ class Evaluation:
 
         Does the generated answer match the ground truth?"""
         
-        api_response = anthropic_msg_api(prompt)
+        api_response = self.anthropic.anthropic_msg_api(prompt)
         judgement = api_response['response']
 
         if "incorrect" in judgement.lower():
@@ -117,36 +126,27 @@ class Evaluation:
     # multi-chunk : no of relevant chunks in top k / total number of questions
     # one chunk : r = 1 if that one chunk is in top k. Otherwise 0. sum(r) / total number of questions
 
-    def compute_recall_single_chunk(self, chunk_id, retrieved_chunk_ids):
-        return 1 if chunk_id in retrieved_chunk_ids else 0
-
-    def compute_recall_multi_chunk(self, relevant_chunk_ids, retrieved_chunk_ids):
-        relevant_set = set(relevant_chunk_ids)
-        retrieved_set = set(retrieved_chunk_ids)
-        common_set = relevant_set & retrieved_set
-        return len(common_set) / len(relevant_set)
+    def compute_recall_single_chunk(self, ground_truth_answer, retrieved_chunk_texts):
+        combined = ' '.join(retrieved_chunk_texts).lower()
+        return 1 if ground_truth_answer.lower() in combined else 0
 
     # -----  Precision ----- #
     # no of relevant chunks in top k / k
     # one chunk: p = 1 if that one chunk is in top k. Otherwise 0. p / k
 
-    def compute_precision_at_k_single_chunk(self, chunk_id, retrieved_chunk_ids, k):
-        return (1 if chunk_id in retrieved_chunk_ids else 0) / k
-
-    def compute_precision_at_k_multi_chunk(self, relevant_chunk_ids, retrieved_chunk_ids, k):
-        relevant_set = set(relevant_chunk_ids)
-        retrieved_set = set(retrieved_chunk_ids)
-        common_set = relevant_set & retrieved_set
-        return len(common_set) / k
+    def compute_precision_at_k_single_chunk(self, ground_truth_answer, retrieved_chunk_texts, k):
+        combined = ' '.join(retrieved_chunk_texts).lower()
+        return (1 if ground_truth_answer.lower() in combined else 0) / k
     
     # ----- MRR ----- #
     # Mean Reciprocal Rank
     # inverse of rank position (index+1) of the first correct answer. Position of chunk_id in the retrieved chunk_ids
 
-    def compute_mrr(self, chunk_id, retrieved_chunk_ids):
-        if chunk_id in retrieved_chunk_ids:
-            rank = retrieved_chunk_ids.index(chunk_id) + 1
-            return 1 / rank
+    def compute_mrr(self, ground_truth_answer, retrieved_chunk_texts):
+        ground_truth_answer = ground_truth_answer.lower()
+        for rank, chunk_text in enumerate(retrieved_chunk_texts, start=1):
+            if ground_truth_answer in chunk_text.lower():
+                return 1 / rank
         return 0
 
     # ----- Cosine Similarity ----- #
@@ -156,6 +156,31 @@ class Evaluation:
         emb1 = self.model.encode(generated_ans, normalize_embeddings=True)
         emb2 = self.model.encode(ground_truth_ans, normalize_embeddings=True)
         return float(np.dot(emb1, emb2))
+
+    # -------- save
+    def save(self,retrieved_output, eval_summary, eval_metrices):
+        if self.mode == AWS:
+            bucket, key = s3_utills.get_s3_bucket_key(self.path)
+            s3_client = boto3.client('s3')
+
+            s3_client.put_object(
+                Bucket=bucket,
+                Key=f"{key}/summary.json",
+                Body=json.dumps(eval_summary, indent=2)
+            )
+            s3_client.put_object(
+                Bucket=bucket,
+                Key=f"{key}/details.json",
+                Body=json.dumps({'retrieved_output': retrieved_output, 'eval_metrices': eval_metrices}, indent=2)
+            )
+        else:
+            os.makedirs(self.path, exist_ok=True)
+            with open(f"{self.path}/summary.json", 'w') as f:
+                json.dump(eval_summary, f, indent=2)
+
+            with open(f"{self.path}/details.json", 'w') as f:
+                json.dump({'retrieved_output': retrieved_output, 'eval_metrices': eval_metrices}, f, indent=2)
+
 
     def evaluate(self, k, retrieved_output,
             use_faithfulness=False, use_relevancy=False, use_llm_correctness=False):
@@ -175,6 +200,7 @@ class Evaluation:
         for output in retrieved_output:
             chunk_id = output['chunk_id']
             retrieved_chunk_ids = output['retrieved_chunk_ids']
+            retrieved_chunk_texts = output['retrieved_chunk_texts']
             qus = output['qus']
             context = output['context']
             generated_ans = output['generated_ans']
@@ -184,13 +210,13 @@ class Evaluation:
             latency1 = output['latency']
 
             # 1. Recall
-            recall = self.compute_recall_single_chunk(chunk_id, retrieved_chunk_ids)
+            recall = self.compute_recall_single_chunk(ground_truth_ans, retrieved_chunk_texts)
 
             # 2. Precision
-            precision_at_k = self.compute_precision_at_k_single_chunk(chunk_id, retrieved_chunk_ids, k)
+            precision_at_k = self.compute_precision_at_k_single_chunk(ground_truth_ans, retrieved_chunk_texts, k)
 
             # 3. MRR and SAS score
-            mrr = self.compute_mrr(chunk_id, retrieved_chunk_ids)
+            mrr = self.compute_mrr(ground_truth_ans, retrieved_chunk_texts)
             sas_score = self.compute_semantic_similarity(generated_ans, ground_truth_ans)
 
             # 4. Answer faithfulness
@@ -263,14 +289,6 @@ class Evaluation:
             'total_latency': total_latency,
         }
 
-        os.makedirs(self.path, exist_ok=True)
-
-        with open(f"{self.path}/summary.json", 'w') as f:
-            json.dump(eval_summary, f, indent=2)
-        
-        with open(f"{self.path}/details.json", 'w') as f:
-            json.dump({'retrieved_output': retrieved_output, 'eval_metrices': eval_metrices}, f, indent=2)
-
-        return eval_summary
+        self.save(retrieved_output, eval_summary, eval_metrices)
 
 
