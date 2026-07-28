@@ -6,7 +6,8 @@ import pyarrow.parquet as pq
 
 from constants import CPU, DENSE, BM25, HYBRID
 
-from src.dist.dataset import Dataset
+from src.dataset import Dataset
+
 from src.dist.chunking import Chunking
 from src.dist.embedding import Embedding
 
@@ -95,7 +96,7 @@ if __name__ == "__main__":
     s2 = time.time()
 
     df = Dataset(mode, dataset_size)
-    dataset_path = df.load_parquet_dataset()
+    dataset_path = df.load_parquet_dataset_s3()
 
     if not dataset_path:
         print("Dataset failed, exiting")
@@ -117,6 +118,10 @@ if __name__ == "__main__":
     if not chunk_path:
         print("Chunking failed, exiting")
         sys.exit(1)
+
+    # Read chunks
+    table = pq.read_table(chunk_path)
+    chunks = table.to_pylist()
 
     t3 = time.time() - s3
     print("time : ", t3)
@@ -164,7 +169,7 @@ if __name__ == "__main__":
     s6 = time.time()
 
     ev = EvalQA(mode, dataset_size, device, chunking_type, num_eval_query)
-    eval_set = ev.get_eval_set()
+    eval_set = ev.build_eval_set(chunks, min_chunk_size=100)
 
     if not eval_set:
         print("Eval set failed, exiting")
@@ -177,10 +182,6 @@ if __name__ == "__main__":
     print("\n----- Retrieval------------\n")
     print("Type : ", retrieval_type)
     s7 = time.time()
-
-    # Read chunks
-    table = pq.read_table(chunk_path)
-    chunks = table.to_pylist()
 
     dry_run = True
     ret = Retrieval(dry_run, retrieval_type, chunks, eval_set, k, reranking, rerank_k, model_name, device)

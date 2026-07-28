@@ -2,7 +2,9 @@
 import numpy as np
 import json
 import os
+import re
 import boto3 
+import time
 from src.anthropic_api import AnthropicAPI
 from src.dist import s3_utills
 
@@ -56,6 +58,7 @@ class Evaluation:
 
         return self.anthropic.anthropic_msg_api(prompt)
     
+    '''
     # ----- Answer Faithfulness 
     def judge_faithfulness(self, generated_answer, context):
         prompt = f"""You are a helpful assistant. Judge whether the following answer is faithful to the provided context. 
@@ -121,7 +124,94 @@ class Evaluation:
             return 1, api_response
         else:
             return 0, api_response
-    
+    '''
+    # ------ LLM Judge Faithfulness, Relevancy and Correctness 
+
+    def _extract_batch_score(self, parsed, i):
+        entry = parsed.get(str(i))  # JSON keys are always strings, even if chunk_id is an int in your data
+        if not isinstance(entry, dict):
+            return 0.0, 0.0, 0.0
+        try:
+            return (
+                float(entry.get("faithfulness", 0.0)),
+                float(entry.get("relevancy", 0.0)),
+                float(entry.get("correctness", 0.0)),
+            )
+        except (TypeError, ValueError):
+            return 0.0, 0.0, 0.0
+
+    def _regex_fallback_batch_score(self, text, i):
+        pattern = (
+            rf'"{re.escape(str(i))}"\s*:\s*{{\s*'
+            rf'"faithfulness"\s*:\s*([\d.]+)\s*,\s*'
+            rf'"relevancy"\s*:\s*([\d.]+)\s*,\s*'
+            rf'"correctness"\s*:\s*([\d.]+)'
+        )
+        match = re.search(pattern, text)
+        if not match:
+            return 0.0, 0.0, 0.0
+        return float(match.group(1)), float(match.group(2)), float(match.group(3))
+
+    def parse(self, judgement_text, batch):
+        cleaned = re.sub(r"^```(json)?|```$", "", judgement_text.strip(), flags=re.MULTILINE).strip()
+
+        try:
+            parsed = json.loads(cleaned)
+        except (json.JSONDecodeError, AttributeError):
+            print(f"[WARN] Batch judge JSON parse failed entirely. Raw: {judgement_text[:200]}")
+            return {}
+
+        results = {}
+        for key, entry in parsed.items():
+            i = int(key)
+            results[i] = self._extract_batch_score(parsed, i)
+        return results
+
+    def get_llm_judgement_prompt(self, block):
+        return f"""You are evaluating multiple RAG system outputs, each identified by a i.
+            For EACH item, score three INDEPENDENT dimensions. Do not let one item's
+            judgment influence another item, and do not let one dimension bleed into
+            another within the same item — a hallucinated answer can still be "relevant."
+
+            Each item below is tagged [i: n]. Use that same i as the key
+            in your response.
+
+            ITEMS:
+            {block}
+
+            For each item, score (0.0-1.0):
+            1. FAITHFULNESS: Is generated_ans fully supported by context, with no claims
+            absent from it? Ignore ground_truth_ans for this dimension.
+            2. RELEVANCY: Does generated_ans directly address qus? Ignore context and
+            ground_truth_ans for this dimension — only judge topical fit.
+            3. CORRECTNESS: Does generated_ans capture the key information in
+            ground_truth_ans, even if phrased differently? Ignore context for this dimension.
+
+            Respond with ONLY this JSON — one key per i shown above, no other text,
+            no markdown fences:
+            {{"<i>": {{"faithfulness": <float>, "relevancy": <float>, "correctness": <float>}}, "<i>": {{...}}, ...}}
+
+            Every i shown in ITEMS must appear as a key in your response, even if
+            you have to score it 0.0 — do not skip or merge items."""
+
+    def get_batch_llm_judgement(self, batch, start):
+
+        block = ""
+
+        for i, item in enumerate(batch):
+            qus = item['qus']
+            context = item['context']
+            generated_ans = item['generated_ans']
+            ground_truth_ans = item['ground_truth_ans']
+
+            block += f"\n[i: {start + i}]\n qus: {qus}\n context: {context}\n generated_ans: {generated_ans}\n ground_truth_ans: {ground_truth_ans}\n"
+        
+        prompt = self.get_llm_judgement_prompt(block)
+        api_response = self.anthropic.anthropic_msg_api(prompt)
+        return api_response
+
+        
+
     # ----- Recall ----- #
     # multi-chunk : no of relevant chunks in top k / total number of questions
     # one chunk : r = 1 if that one chunk is in top k. Otherwise 0. sum(r) / total number of questions
@@ -182,22 +272,17 @@ class Evaluation:
                 json.dump({'retrieved_output': retrieved_output, 'eval_metrices': eval_metrices}, f, indent=2)
 
 
-    def evaluate(self, k, retrieved_output,
-            use_faithfulness=False, use_relevancy=False, use_llm_correctness=False):
+    def evaluate(self, k, retrieved_output, use_llm_judge):
         
         print("Evaluation")
 
-        eval_metrices = []
+        eval_metrices = {}
 
         total_recall = 0
         total_cost = 0
         total_latency = 0
 
-        answer_faithfulness = []
-        answer_relevancy = []
-        answer_llm_correctness = []
-
-        for output in retrieved_output:
+        for i, output in enumerate(retrieved_output):
             chunk_id = output['chunk_id']
             retrieved_chunk_ids = output['retrieved_chunk_ids']
             retrieved_chunk_texts = output['retrieved_chunk_texts']
@@ -206,8 +291,8 @@ class Evaluation:
             generated_ans = output['generated_ans']
             ground_truth_ans = output['ground_truth_ans']
             k = output['k']
-            cost1 = output['cost']
-            latency1 = output['latency']
+            cost = output['cost']
+            latency = output['latency']
 
             # 1. Recall
             recall = self.compute_recall_single_chunk(ground_truth_ans, retrieved_chunk_texts)
@@ -219,59 +304,73 @@ class Evaluation:
             mrr = self.compute_mrr(ground_truth_ans, retrieved_chunk_texts)
             sas_score = self.compute_semantic_similarity(generated_ans, ground_truth_ans)
 
-            # 4. Answer faithfulness
-            score_faithfulness = 0
-            cost2 = 0
-            latency2 = 0
-            if use_faithfulness:
-                score_faithfulness, api_response2 = self.judge_faithfulness(generated_ans, context)
-                cost2 = api_response2['cost']
-                latency2 = api_response2['latency']
-            
-            # 5. Answer relevancy
-            score_relevancy = 0
-            cost3 = 0
-            latency3 = 0
-            if use_relevancy:
-                score_relevancy, api_response3 = self.judge_relevancy(generated_ans, qus)
-                cost3 = api_response3['cost']
-                latency3 = api_response3['latency']
-
-            # 6. Answer LLM correctness
-            score_llm_correctness = 0
-            cost4 = 0
-            latency4 = 0
-            if use_llm_correctness:
-                score_llm_correctness, api_response4 = self.judge_llm_correctness(generated_ans, ground_truth_ans)
-                cost4 = api_response4['cost']
-                latency4 = api_response4['latency']
-
-            cost = cost1 + cost2 + cost3 + cost4 
-            latency = latency1 + latency2 + latency3 + latency4
-
-            eval_metrices.append(self.EVAL_METRICES(k, recall, mrr, precision_at_k, sas_score, 
-                                    score_faithfulness, score_relevancy, score_llm_correctness, cost, latency))
+            eval_metrices[i] = self.EVAL_METRICES(k, recall, mrr, precision_at_k, sas_score, 0, 0, 0, cost, latency)
 
             print(" Qus : ", qus)
             print("Generated ans : ", generated_ans)
             print("Ground truth ans : ", ground_truth_ans)
             print("Matrices : recall, MRR, precision_at_k, sas_score : ", recall, mrr, precision_at_k, sas_score)
-            print("Matrices : score_faithfulness, score_relevancy, score_llm_correctness : ", score_faithfulness, score_relevancy, score_llm_correctness)
-            print("Cost : ", cost)
-            print("Latency : ", latency)
+            print("Retrieval Cost : ", cost)
+            print("Retrieval Latency : ", latency)
 
             total_recall += recall
             total_cost += cost
             total_latency += latency
-            answer_faithfulness.append(score_faithfulness)
-            answer_relevancy.append(score_relevancy)
-            answer_llm_correctness.append(score_llm_correctness)
         
         print("total cost : ", total_cost, ", total latency : ", total_latency)
 
-        avg_ans_faithfulness = sum(answer_faithfulness)/len(answer_faithfulness)
-        avg_ans_relevancy = sum(answer_relevancy)/len(answer_relevancy)
-        avg_ans_lmm_correctness = sum(answer_llm_correctness) / len(answer_llm_correctness)
+        # API call
+        # Answer faithfulness, relevancy and correctness 
+        # 5. Use temp_eval_metrices for batch API processing
+
+        answer_faithfulness = []
+        answer_relevancy = []
+        answer_llm_correctness = []
+
+        if use_llm_judge:
+            batch_size = 5
+            for start in range(0, len(retrieved_output), batch_size):
+                
+                # Get batch
+                batch = retrieved_output[start:start + batch_size]
+
+                # Call to API with the batch 
+                api_response = self.get_batch_llm_judgement(batch, start)
+
+                judgement_text = api_response['response']
+                batch_cost = api_response['cost'] 
+                batch_latency = api_response['latency'] 
+
+                # Update total
+                total_cost += batch_cost
+                total_latency += batch_latency
+
+                #Parse response {chunk_id -> {faithfulness, relevancy, correctness}}
+                batch_score = self.parse(judgement_text, batch)
+
+                for local_idx, b in enumerate(batch):
+                    i = start + local_idx
+                    faithfulness, relevancy, correctness = batch_score[i]
+
+                    # Update eval_matrices
+                    #eval_metrices[chunk_id] = self.EVAL_METRICES(k, recall, mrr, precision_at_k, sas_score, 0, 0, 0, cost, latency)
+                    em = eval_metrices[i]
+
+                    eval_metrices[i] = self.EVAL_METRICES(em['k'], em['recall'], em['mrr'], em['precision_at_k'], em['sas_score'], 
+                                                                faithfulness, relevancy, correctness,
+                                                                em['cost'] + batch_cost/len(batch), em['latency'] + batch_latency/len(batch))
+                    
+
+                    answer_faithfulness.append(faithfulness)
+                    answer_relevancy.append(relevancy)
+                    answer_llm_correctness.append(correctness)
+
+        # ------------ Summary 
+
+        avg_ans_faithfulness = sum(answer_faithfulness)/len(answer_faithfulness) if use_llm_judge else 0
+        avg_ans_relevancy = sum(answer_relevancy)/len(answer_relevancy) if use_llm_judge else 0
+        avg_ans_lmm_correctness = sum(answer_llm_correctness) / len(answer_llm_correctness) if use_llm_judge else 0
+        
         print("recall, avg ans faithfulness, avg ans releavncy, avg_ans_lmm_correctness : ", 
             total_recall / len(retrieved_output), avg_ans_faithfulness, avg_ans_relevancy, avg_ans_lmm_correctness)
 

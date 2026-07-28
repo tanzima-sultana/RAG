@@ -2,195 +2,411 @@ Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF
 
  ------------- Dist RAG -------- 
 
-Namespace(mode='local', num_partition=4, device='cpu', model_name='all-MiniLM-L6-v2', dataset_size=1000, batch_size=256, chunking_type='fixed', max_chunk_size=256, fix_chunk_overlap=32, semantic_threshold=0.3, indexing_type='ivf', num_eval_query=20, k=5, retrieval_type='dense', reranking=0, rerank_k=20)
+Namespace(mode='local', num_partition=4, device='cuda', model_name='all-MiniLM-L6-v2', dataset_size=5000, batch_size=256, chunking_type='fixed', max_chunk_size=256, fix_chunk_overlap=32, semantic_threshold=0.3, indexing_type='flatip', num_eval_query=50, k=5, retrieval_type='dense', reranking=0, rerank_k=20)
 
  ------- Load dataset -------- 
 
 Loading parquet data from disk
-time :  0.0038208961486816406
+time :  0.0034499168395996094
 
  ------- Chunking -------- 
 
 Type :  fixed
 loading chunking from disk
-time :  8.106231689453125e-06
+time :  0.06385493278503418
 
 ----- Embedding ------------
 
 loading embeddings from disk
-time :  6.198883056640625e-06
+time :  2.2411346435546875e-05
 
 ----- Indexing------------
 
-FAISS Indexing :  ivf
-Load indexing ivf from disk
-time :  0.002325296401977539
+FAISS Indexing :  flatip
+Load indexing flatip from disk
+time :  0.012212991714477539
 
 ----- Evaluation Qus-Ans Set------------
 
-Loading eval_qa from disk
-time :  6.532669067382812e-05
+Build eval_set
+time :  60.67523503303528
 
 ----- Retrieval------------
 
 Type :  dense
-Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]Loading weights: 100%|██████████| 103/103 [00:00<00:00, 16711.67it/s]
-Loading weights:   0%|          | 0/105 [00:00<?, ?it/s]Loading weights: 100%|██████████| 105/105 [00:00<00:00, 4577.36it/s]
+Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]Loading weights: 100%|██████████| 103/103 [00:00<00:00, 13036.40it/s]
+Loading weights:   0%|          | 0/105 [00:00<?, ?it/s]Loading weights: 100%|██████████| 105/105 [00:00<00:00, 10157.57it/s]
 
  Dense Retrieval with reranking :  0 , and rerank_k :  20
-query_embeddings shape -  (20, 384)
-batch API response time :  5.245208740234375e-06
-batch API response time :  2.384185791015625e-06
-batch API response time :  1.9073486328125e-06
+query_embeddings shape -  (50, 384)
+batch API response time :  5.9604644775390625e-06
+batch API response time :  2.6226043701171875e-06
 batch API response time :  1.430511474609375e-06
-time :  8.73407530784607
+batch API response time :  1.430511474609375e-06
+batch API response time :  1.430511474609375e-06
+batch API response time :  1.430511474609375e-06
+batch API response time :  1.1920928955078125e-06
+batch API response time :  1.430511474609375e-06
+batch API response time :  1.430511474609375e-06
+batch API response time :  1.1920928955078125e-06
+time :  10.966782808303833
 
 ----- Evaluation ------------
 
-Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]Loading weights: 100%|██████████| 103/103 [00:00<00:00, 8055.74it/s]
+Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]Loading weights: 100%|██████████| 103/103 [00:00<00:00, 10676.22it/s]
 Evaluation
- Qus :  Where did George F. Weber first encounter Murrill after years of not knowing his whereabouts?
+ Qus :  Who has the sole privilege of awarding the Bill Bean County Affiliate of the Year Award?
 Generated ans :  MOCK_ANSWER
-Ground truth ans :  Weber first encountered Murrill at the Tin Can Tourist Camp, a Gainesville resort, in the recreation hall where Murrill was performing a piano concert for tourists.
-Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.058230236172676086
+Ground truth ans :  The chair of the LPIN has the sole privilege of awarding it.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.06412243843078613
 Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
 Cost :  0
 Latency :  0
- Qus :  How many hits did Charles Jamieson record in 1923, and how did that rank in the American League?
+ Qus :  What medal did Galina Bystrova win in the pentathlon at the 1964 Olympics?
 Generated ans :  MOCK_ANSWER
-Ground truth ans :  Jamieson recorded a career-high 222 hits in 1923, leading the American League.
-Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 -0.009705448523163795
+Ground truth ans :  She won a bronze medal in the pentathlon at the 1964 Olympics.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.03610393777489662
 Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
 Cost :  0
 Latency :  0
- Qus :  What happened to East Carolina coach John Christenbury during World War II?
+ Qus :  What types of cargo does the bulk cargo terminal at the port of Ploce handle?
 Generated ans :  MOCK_ANSWER
-Ground truth ans :  Coach Christenbury was killed in an explosion at Port Chicago, California on July 1, 1944.
-Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 -0.0546254962682724
+Ground truth ans :  It handles coal, iron ore, pig iron, scrap iron, phosphates, and cinder.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.02236826717853546
 Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
 Cost :  0
 Latency :  0
- Qus :  What effect does electron irradiation have on polyolefin in the heat-shrinkable sleeve manufacturing process?
+ Qus :  What happened to vacant timar land once it came under direct imperial control?
 Generated ans :  MOCK_ANSWER
-Ground truth ans :  Electron irradiation cross-links the polyolefin, improving its molecular structure so it performs more like a tough, heat-resistant, elastic material or rubber rather than a plastic material.
-Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 -0.03674644976854324
+Ground truth ans :  It was turned into tax farms (muqata'ah) to ensure greater cash revenue for the central government.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.013415027409791946
 Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
 Cost :  0
 Latency :  0
- Qus :  What did Chrissie do to support Vicki in her mother's absence?
+ Qus :  What award did Clark receive in 1987 from the Royal Cruising Club of Great Britain?
 Generated ans :  MOCK_ANSWER
-Ground truth ans :  Chrissie actively took on the role of mother to Vicki, helping her apply to art college and watching over her romantic relationships, since Vicki's real mother was in the USA.
-Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.02706952765583992
+Ground truth ans :  He received the Tillman Medal for cruising in high latitudes.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.0029813461005687714
 Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
 Cost :  0
 Latency :  0
- Qus :  In what year was the Herpetological Society of Finland founded?
+ Qus :  How many band members does the Skin Tyee First Nation have?
 Generated ans :  MOCK_ANSWER
-Ground truth ans :  The Herpetological Society of Finland was founded in 1992.
-Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 -0.011479523032903671
+Ground truth ans :  The Skin Tyee First Nation has 184 band members.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.06153107434511185
 Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
 Cost :  0
 Latency :  0
- Qus :  When was Gemporia Lifestyle launched?
+ Qus :  Why was Otto Wachter never tried for charges of mass murder in Poland?
 Generated ans :  MOCK_ANSWER
-Ground truth ans :  Gemporia Lifestyle was launched on 8 July 2020.
-Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.08092077076435089
+Ground truth ans :  Because Wachter died in Rome in 1949 before he could be tried.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.058667588979005814
 Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
 Cost :  0
 Latency :  0
- Qus :  What was the ship renamed to on 1 September 1965, and what role did it take on?
+ Qus :  What award did the author referenced in the passage win in 2007?
 Generated ans :  MOCK_ANSWER
-Ground truth ans :  The ship was renamed Vanguard on 1 September 1965 and was placed in service as USNS Vanguard (T-AGM-19), designed to be a seagoing missile tracking station.
-Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.021969474852085114
+Ground truth ans :  He won the S.E.A. Write Award as the 2007 Singaporean winner.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.008773298934102058
 Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
 Cost :  0
 Latency :  0
- Qus :  Why did the judge's actions in the Bank Julius Baer v. WikiLeaks case attract public attention?
+ Qus :  In what year was Ado-Odo founded?
 Generated ans :  MOCK_ANSWER
-Ground truth ans :  The judge's actions roused media and cyber-liberties groups to defend WikiLeaks' rights under the First Amendment and brought renewed scrutiny to the documents the bank hoped to shield.
-Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.019467588514089584
+Ground truth ans :  Ado-Odo was founded in the year 1045.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.03973301500082016
 Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
 Cost :  0
 Latency :  0
- Qus :  What role did Rajeev Khandelwal play in the film Samrat & Co.?
+ Qus :  What false claim did Marius Lacatus make about Sorin Stratila to justify releasing him from Steaua's second team?
 Generated ans :  MOCK_ANSWER
-Ground truth ans :  He played the role of Samrat Tilakdhari, a detective who is approached by a lady with a strange case.
-Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.06446114182472229
+Ground truth ans :  Lacatus claimed Stratila was too old at 25, even though Stratila was only 21 at the time.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.08043775707483292
 Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
 Cost :  0
 Latency :  0
- Qus :  When did Otwock railway station first open?
+ Qus :  What happened to Adela Micha at the university ceremony that caused discontent among members?
 Generated ans :  MOCK_ANSWER
-Ground truth ans :  Otwock station opened in 1877, together with the Vistula River Railroad.
-Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 -0.05671669542789459
+Ground truth ans :  Two eggs were thrown at her, one of which struck her shoulder.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.19119444489479065
 Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
 Cost :  0
 Latency :  0
- Qus :  What is the calcium carbonate content of the Vanport limestone layer found around Rose Point?
+ Qus :  On what date was a letter sent from Friar Simao de Barros to Queen Elizabeth requesting military assistance?
 Generated ans :  MOCK_ANSWER
-Ground truth ans :  The Vanport limestone layer has a 93.6% content of calcium carbonate.
-Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 -0.012494411319494247
+Ground truth ans :  The letter was sent on 13 October 1581.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.04258294403553009
 Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
 Cost :  0
 Latency :  0
- Qus :  In what inning did Rick Camp hit his famous home run against the New York Mets, and off which pitcher?
+ Qus :  On what date was Judi Dench born according to this passage?
 Generated ans :  MOCK_ANSWER
-Ground truth ans :  Rick Camp hit his game-tying home run in the 18th inning off Tom Gorman.
-Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.03629207983613014
+Ground truth ans :  Judi Dench was born on 9 December (1934).
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.024890877306461334
 Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
 Cost :  0
 Latency :  0
- Qus :  When did chariot use make its way into Egypt, and what event brought it there?
+ Qus :  Who founded the village of Dybowo and in what year?
 Generated ans :  MOCK_ANSWER
-Ground truth ans :  Chariot use made its way into Egypt around 1650 BCE during the Hyksos invasion of Egypt and the establishment of the fourteenth dynasty.
-Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 -0.0020444681867957115
+Ground truth ans :  Dybowo was founded in 1564 by Jan Dybowski.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.015275442972779274
 Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
 Cost :  0
 Latency :  0
- Qus :  What sustainability-related extracurricular activities are available at the school?
+ Qus :  Who was appointed director of RENCI in 2009?
 Generated ans :  MOCK_ANSWER
-Ground truth ans :  The sustainability activities available include the Iyilik Bone Marrow Project, Nature Club, Permaculture, and World Wildlife Fund.
-Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 -0.07005519419908524
+Ground truth ans :  Stanley C. Ahalt, PhD, was appointed director in 2009.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 -0.05508962273597717
 Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
 Cost :  0
 Latency :  0
- Qus :  What cash prize was awarded to people who submitted trivia items that received five stars from the panel of judges?
+ Qus :  What did the Tunisian Code of Personal Status issued on 13 August 1956 ban?
 Generated ans :  MOCK_ANSWER
-Ground truth ans :  A cash prize of 1,000,000 won was awarded for submitted items that received five stars.
-Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.13738825917243958
+Ground truth ans :  It banned polygamy.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.10017664730548859
 Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
 Cost :  0
 Latency :  0
- Qus :  What was the score of the 1973 football game between East Carolina and UNC in Chapel Hill?
+ Qus :  What was the median age of the population in the city described in this passage?
 Generated ans :  MOCK_ANSWER
-Ground truth ans :  UNC won the 1973 game 28–27.
-Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.018679864704608917
+Ground truth ans :  The median age was 42 years.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.11337544023990631
 Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
 Cost :  0
 Latency :  0
- Qus :  Who donated $1 million to East Carolina that led to Ficklen Stadium being renamed?
+ Qus :  Who originally performed the theme song of the soap opera described in this passage?
 Generated ans :  MOCK_ANSWER
-Ground truth ans :  Ronald and Mary Ellen Dowdy, a real estate developer in Orlando, Florida, donated $1 million, leading to the stadium being renamed Dowdy–Ficklen Stadium in 1994.
-Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.06410638988018036
+Ground truth ans :  The theme song was originally performed by Raymond Lauchengco.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 -0.03473173454403877
 Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
 Cost :  0
 Latency :  0
- Qus :  Who is the other bodybuilder besides Danny Padilla to have won both the America and the Universe titles in the same year?
+ Qus :  Why was the four-song CD called "The Samsung Sessions" shelved?
 Generated ans :  MOCK_ANSWER
-Ground truth ans :  Frank Zane is the other man to have won both the America and the Universe in the same year.
-Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.06832300871610641
+Ground truth ans :  It was shelved due to legal issues regarding the use of uncleared samples.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.07689034938812256
 Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
 Cost :  0
 Latency :  0
- Qus :  On what date did Bach first perform the cantata BWV 164, and for which Sunday was it composed?
+ Qus :  What is the length of the longest siding on the Hinckley Subdivision, and where is it located?
 Generated ans :  MOCK_ANSWER
-Ground truth ans :  Bach first performed the cantata on 26 August 1725, composed for the 13th Sunday after Trinity.
-Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 -0.05528535693883896
+Ground truth ans :  The longest siding is in Andover with a length of 9,000 feet (1.75 miles).
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.0194440595805645
+Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
+Cost :  0
+Latency :  0
+ Qus :  What was Consed originally developed for?
+Generated ans :  MOCK_ANSWER
+Ground truth ans :  Consed was originally developed as a contig editing and finishing tool for large-scale cosmid shotgun sequencing in the Human Genome Project.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.0012011677026748657
+Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
+Cost :  0
+Latency :  0
+ Qus :  When was the Mr. Conrad Samsung EP released digitally?
+Generated ans :  MOCK_ANSWER
+Ground truth ans :  It was released digitally on September 20, 2015, via Organic Intelligence Records.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.025641608983278275
+Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
+Cost :  0
+Latency :  0
+ Qus :  Who drove the B09/60 entered by Kronos Racing at the 2011 24 Hours of Le Mans?
+Generated ans :  MOCK_ANSWER
+Ground truth ans :  The car was driven by Vanina Ickx, Bas Leinders, and Maxime Martin.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.025396782904863358
+Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
+Cost :  0
+Latency :  0
+ Qus :  In which museum in Florence was the exhibition "Femminilità Radicale" held in 2014?
+Generated ans :  MOCK_ANSWER
+Ground truth ans :  It was held at the Museo Gucci in Florence.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.0010577253997325897
+Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
+Cost :  0
+Latency :  0
+ Qus :  Who suggested that Lisa Sugar turn her celebrity gossip hobby into a company?
+Generated ans :  MOCK_ANSWER
+Ground truth ans :  Blogger Om Malik suggested it.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.057264141738414764
+Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
+Cost :  0
+Latency :  0
+ Qus :  What award did the person described in this passage win at the New York Film Festival in 2017?
+Generated ans :  MOCK_ANSWER
+Ground truth ans :  They won the Silver World Medal at the New York Film Festival in 2017.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 -0.0009884890168905258
+Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
+Cost :  0
+Latency :  0
+ Qus :  Who funded the construction of Berijam Lake's dam, and when was it created?
+Generated ans :  MOCK_ANSWER
+Ground truth ans :  Sir Vere Levigne, Collector of Madurai, donated part of his personal retirement funds to build the dam, which was artificially created in 1867.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 -0.00698380172252655
+Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
+Cost :  0
+Latency :  0
+ Qus :  What was the score when Croatia lost to Brazil in the round of 16 at the 1999 FIFA U-20 World Cup?
+Generated ans :  MOCK_ANSWER
+Ground truth ans :  Croatia lost to Brazil 4–0.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.1076560765504837
+Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
+Cost :  0
+Latency :  0
+ Qus :  Where did Santiago Figueroa fight his most important match as of the passage, and who was his opponent?
+Generated ans :  MOCK_ANSWER
+Ground truth ans :  He fought at the Chumash Casino in California against IBF #15 ranked featherweight contender Cornelius "Master" Lock.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.08306147158145905
+Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
+Cost :  0
+Latency :  0
+ Qus :  What score did Nineteeneighties receive on Metacritic?
+Generated ans :  MOCK_ANSWER
+Ground truth ans :  It received an average score of 75, based on 10 reviews.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.17966565489768982
+Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
+Cost :  0
+Latency :  0
+ Qus :  Which electorate did Rob Hudson win in the 2002 state election, and who did he defeat?
+Generated ans :  MOCK_ANSWER
+Ground truth ans :  He won the Bentleigh electorate, defeating incumbent Inga Peulich.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.07396217435598373
+Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
+Cost :  0
+Latency :  0
+ Qus :  What injury did guard Mike Utley suffer in the week 12 game against the Los Angeles Rams?
+Generated ans :  MOCK_ANSWER
+Ground truth ans :  He suffered a severe injury to two of his cervical vertebrae, rendering him paralyzed from the chest down and ending his career.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 -0.0606815442442894
+Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
+Cost :  0
+Latency :  0
+ Qus :  What is the name of the Danish TV series about a police officer who moves to the island of Samsø with his daughter?
+Generated ans :  MOCK_ANSWER
+Ground truth ans :  The series is called "Strisser på Samsø" (A Cop on Samsø).
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 -0.00957723893225193
+Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
+Cost :  0
+Latency :  0
+ Qus :  When was William Gordon elected a fellow of the Linnean Society of London?
+Generated ans :  MOCK_ANSWER
+Ground truth ans :  He was elected a fellow in 1832.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.05938092619180679
+Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
+Cost :  0
+Latency :  0
+ Qus :  Where did King Jangsu initially settle Feng Hong's people after his arrival?
+Generated ans :  MOCK_ANSWER
+Ground truth ans :  King Jangsu settled Feng Hong's people at Pingguo (in modern Yingkou, Liaoning).
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.02281404659152031
+Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
+Cost :  0
+Latency :  0
+ Qus :  How long did Rob Zombie work on the animated film El Superbeasto?
+Generated ans :  MOCK_ANSWER
+Ground truth ans :  He worked on it for three years.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 -0.021145381033420563
+Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
+Cost :  0
+Latency :  0
+ Qus :  How many poems does the collection "Come Share My Joy" contain?
+Generated ans :  MOCK_ANSWER
+Ground truth ans :  It contains 77 poems.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.03802545741200447
+Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
+Cost :  0
+Latency :  0
+ Qus :  According to scholars like Cameron and Brown, how common was open conflict between pagan and Christian communities in the 4th century?
+Generated ans :  MOCK_ANSWER
+Ground truth ans :  Open conflict was actually something of a rarity.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.045673102140426636
+Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
+Cost :  0
+Latency :  0
+ Qus :  In what year did Assad found the international ensemble Off the Cliff?
+Generated ans :  MOCK_ANSWER
+Ground truth ans :  Assad founded the ensemble in 2010.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.02297298237681389
+Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
+Cost :  0
+Latency :  0
+ Qus :  In what year did Georgy Taratorkin try his hand as a director, and what was the film called?
+Generated ans :  MOCK_ANSWER
+Ground truth ans :  In 1992, he directed the film "The One Who Did Not Come."
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 -0.024953853338956833
+Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
+Cost :  0
+Latency :  0
+ Qus :  According to Wagner, when were the methods of "strategic-level intercession" first known to the majority of Christians?
+Generated ans :  MOCK_ANSWER
+Ground truth ans :  According to Wagner, these methods were virtually unknown to the majority of Christians before the 1990s.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.024633221328258514
+Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
+Cost :  0
+Latency :  0
+ Qus :  Where and when was the film "Accidents Happen" shot?
+Generated ans :  MOCK_ANSWER
+Ground truth ans :  The film was shot in Sydney, New South Wales, over June–July 2008.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.047874875366687775
+Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
+Cost :  0
+Latency :  0
+ Qus :  How often do the sloths described in the passage descend from the canopy to defecate?
+Generated ans :  MOCK_ANSWER
+Ground truth ans :  They descend once a week to defecate on the forest floor.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.018025971949100494
+Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
+Cost :  0
+Latency :  0
+ Qus :  How many copies of the secret document exist in the story described in the passage?
+Generated ans :  MOCK_ANSWER
+Ground truth ans :  Only two copies exist in the world.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.03931581974029541
+Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
+Cost :  0
+Latency :  0
+ Qus :  What is the racial background of the two producers who traveled to South Africa for their radio story?
+Generated ans :  MOCK_ANSWER
+Ground truth ans :  Rich Robinson is Black and Josh Seftel is White.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.07294650375843048
+Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
+Cost :  0
+Latency :  0
+ Qus :  Who published "A Brief History of the United States Court of Customs and Patent Appeals"?
+Generated ans :  MOCK_ANSWER
+Ground truth ans :  It was written by Giles S. Rich and published by the U.S. Government Printing Office.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 -0.03645037114620209
+Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
+Cost :  0
+Latency :  0
+ Qus :  Who signed Green for Port Vale, and in what division was the club playing at the time?
+Generated ans :  MOCK_ANSWER
+Ground truth ans :  Stanley Matthews signed Green for Port Vale, which was in the Fourth Division.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.006489468738436699
+Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
+Cost :  0
+Latency :  0
+ Qus :  What new strategy did Thieu declare when he decided to focus on the III and IV Corps tactical zones?
+Generated ans :  MOCK_ANSWER
+Ground truth ans :  Thieu declared the strategy as "light at the top, heavy on the bottom."
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.06271126121282578
+Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
+Cost :  0
+Latency :  0
+ Qus :  What is the county town of East Sussex?
+Generated ans :  MOCK_ANSWER
+Ground truth ans :  The county town of East Sussex is Lewes.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.03626515716314316
+Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
+Cost :  0
+Latency :  0
+ Qus :  What historic achievement did Benjie Paras accomplish in the 1989 Formula Shell Zoom Masters season?
+Generated ans :  MOCK_ANSWER
+Ground truth ans :  Benjie Paras became the first PBA player to win both the Rookie of the Year and the Most Valuable Player trophy.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.1099420040845871
 Matrices : score_faithfulness, score_relevancy, score_llm_correctness :  0 0 0
 Cost :  0
 Latency :  0
 total cost :  0 , total latency :  0
 recall, avg ans faithfulness, avg ans releavncy, avg_ans_lmm_correctness :  0.0 0.0 0.0 0.0
-time :  3.5012285709381104
+time :  4.8055713176727295
 
------ Total time :  12.427381038665771
+----- Total time :  76.56412100791931

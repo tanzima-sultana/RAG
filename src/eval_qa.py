@@ -112,11 +112,13 @@ class EvalQA:
 
    def build_eval_set(self, chunks, min_chunk_size):
       
-      eval_set = []
-      
       eval_set = self.get_eval_set()
       if eval_set:
           return eval_set
+
+
+      print("Build eval_set")
+      eval_set = []
 
       sample_chunks = self.get_sample_chunks(chunks, min_chunk_size, self.no_queries)
       

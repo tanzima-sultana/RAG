@@ -28,8 +28,9 @@ class Dataset:
     def load_parquet_dataset_local(self):
         if os.path.exists(self.path):
             print("Loading parquet data from disk")
-            return self.path
+            return load_dataset("parquet", data_files=self.path, split="train")   
 
+        dataset = None
         try:
             print("Create parquet dataset")
             dataset_original = load_dataset("parquet", data_files={"train": LOCAL_DATASET}, split="train")
@@ -44,7 +45,7 @@ class Dataset:
             print("Dataset write produced no output")
             return None
 
-        return self.path
+        return dataset
     
     # ------------ AWS -------------
     
@@ -68,11 +69,4 @@ class Dataset:
             return None
 
         return self.path
-    
-    def load_parquet_dataset(self):
-        #print("Load dataset")
-        if self.mode == LOCAL:
-            return self.load_parquet_dataset_local()
-        else:
-            return self.load_parquet_dataset_s3()
 

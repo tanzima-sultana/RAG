@@ -228,33 +228,38 @@ class Chunking:
             print("Read chunks from disk : ", self.chunking_type)
             with open(self.path, 'rb') as f:
                 cached = pickle.load(f)
-            return cached['chunks'], cached['avg_chunk_size']
+            return self.path, cached['chunks'], cached['avg_chunk_size']
         
-        chunks = []
-        chunks_sizes = []
+        try:
+            chunks = []
+            chunks_sizes = []
 
-        for i, doc in enumerate(self.dataset):
-            #print(f"Processing doc {i}/{len(self.dataset)}")
-            doc_id = doc['doc_id']
-            title = doc['title']
-            text = doc['text']
-            
-            c1 = []
-            c2 = []
-            if self.chunking_type == FIXED:
-                c1, c2 = self.fixed_chunking(doc_id, title, text, max_chunk_size, fix_chunk_overlap)
-            elif self.chunking_type == SENTENCE:
-                c1, c2 = self.sentence_aware_chunking(doc_id, title, text, max_chunk_size, fix_chunk_overlap)
-            else:
-                c1, c2 = self.semantic_chunking(doc_id, title, text, max_chunk_size, fix_chunk_overlap, semantic_threshold)
-            
-            chunks.extend(c1)
-            chunks_sizes.extend(c2)
-    
-        avg_chunk_size = np.mean(chunks_sizes)
+            for i, doc in enumerate(self.dataset):
+                #print(f"Processing doc {i}/{len(self.dataset)}")
+                doc_id = doc['doc_id']
+                title = doc['title']
+                text = doc['text']
+                
+                c1 = []
+                c2 = []
+                if self.chunking_type == FIXED:
+                    c1, c2 = self.fixed_chunking(doc_id, title, text, max_chunk_size, fix_chunk_overlap)
+                elif self.chunking_type == SENTENCE:
+                    c1, c2 = self.sentence_aware_chunking(doc_id, title, text, max_chunk_size, fix_chunk_overlap)
+                else:
+                    c1, c2 = self.semantic_chunking(doc_id, title, text, max_chunk_size, fix_chunk_overlap, semantic_threshold)
+                
+                chunks.extend(c1)
+                chunks_sizes.extend(c2)
         
-        os.makedirs(os.path.dirname(self.path), exist_ok=True)
-        with open(self.path, 'wb') as f:
-            pickle.dump({'chunks': chunks, 'avg_chunk_size': avg_chunk_size}, f)
+            avg_chunk_size = np.mean(chunks_sizes)
+            
+            os.makedirs(os.path.dirname(self.path), exist_ok=True)
+            with open(self.path, 'wb') as f:
+                pickle.dump({'chunks': chunks, 'avg_chunk_size': avg_chunk_size}, f)
+            
+            return self.path, chunks, avg_chunk_size
         
-        return chunks, avg_chunk_size
+        except Exception as e:
+            print(f"Chunking failed: {e}")
+            return None, None, None

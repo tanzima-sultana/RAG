@@ -8,16 +8,16 @@ unset SPARK_HOME
 
 MODE="local" # local, aws
 NUM_PARTITION=4
-DEVICE="cpu" # cpu, cuda # for aws, its spark(cpu) and spark-gpu
+DEVICE="cuda" # cpu, cuda # for aws, its spark(cpu) and spark-gpu
 MODEL_NAME="all-MiniLM-L6-v2"
-DATASET_SIZE=1000
+DATASET_SIZE=5000
 BATCH_SIZE=256
 CHUNKING_TYPE="fixed" #"fixed", "sentence", "semantic"
 MAX_CHUNK_SISZE=256
 FIX_CHUNK_OVERLAP=32
 SEMANTIC_THREASHOLD=0.3
-INDEXING_TYPE="ivf" #flatip, ivf, hnsw
-NUM_EVAL_QUERY=20
+INDEXING_TYPE="flatip" #flatip, ivf, hnsw
+NUM_EVAL_QUERY=50
 K=5
 RETRIEVAL_TYPE="dense" #"dense", "bm25", "hybrid"
 RE_RANKING=0 # 0 = no rerank, 1 = rerank

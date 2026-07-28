@@ -1,12 +1,15 @@
 import argparse
 import time
 import torch
+import sys 
 
 from constants import LOCAL, CPU, DENSE, BM25, HYBRID
 
-from src.local.dataset import Dataset
+from src.dataset import Dataset
+
 from src.local.chunking import Chunking
 from src.local.embedding import Embedding
+
 from src.indexing import Indexing
 from src.eval_qa import EvalQA
 from src.retrieval import Retrieval
@@ -85,9 +88,12 @@ if __name__ == "__main__":
     print("\n ------- Load dataset -------- \n")
     s2 = time.time()
 
-    df = Dataset(dataset_size)
-    dataset = None
-    dataset = df.load_parquet_dataset()
+    df = Dataset(mode, dataset_size)
+    dataset = df.load_parquet_dataset_local()
+
+    if not dataset:
+        print("Dataset failed, exiting")
+        sys.exit(1)
 
     t2 = time.time() - s2
     print("time : ", t2)
@@ -99,7 +105,11 @@ if __name__ == "__main__":
     s3 = time.time()
 
     ch = Chunking(model_name, dataset, dataset_size, device, chunking_type)
-    chunks, avg_chunk_size = ch.compute_chunks(max_chunk_size, fix_chunk_overlap, semantic_threshold)
+    chunk_path, chunks, avg_chunk_size = ch.compute_chunks(max_chunk_size, fix_chunk_overlap, semantic_threshold)
+
+    if not chunk_path or not chunks or not avg_chunk_size:
+        print("Chunking failed, exiting")
+        sys.exit(1)
 
     t3 = time.time() - s3
     print("time : ", t3)
@@ -109,7 +119,11 @@ if __name__ == "__main__":
     s4 = time.time()
 
     em = Embedding(model_name, dataset_size, device, chunking_type)
-    embeddings = em.generate_embeddings(chunks)
+    embedding_path = em.generate_embeddings(chunks)
+
+    if not embedding_path:
+        print("Embedding failed, exiting")
+        sys.exit(1)
 
     t4 = time.time() - s4
     print("time : ", t4)
@@ -124,12 +138,16 @@ if __name__ == "__main__":
     faiss_index = None
     if retrieval_type in (DENSE, HYBRID):
         print("FAISS Indexing : ", indexing_type)
-        faiss_index = idx.generate_faiss_index(embeddings)
+        faiss_index = idx.generate_faiss_index(embedding_path)
     
     bm25_index = None 
     if retrieval_type in (BM25, HYBRID):
         print("Bm25 Indexing")
-        bm25_index = idx.generate_bm25_index(chunks)
+        bm25_index = idx.generate_bm25_index(chunk_path)
+
+    if not faiss_index and not bm25_index: 
+        print("Index failed, exiting")
+        sys.exit(1)
 
     t5 = time.time() - s5
     print("time : ", t5)
@@ -140,6 +158,10 @@ if __name__ == "__main__":
 
     ev = EvalQA(mode, dataset_size, device, chunking_type, no_eval_query)
     eval_set = ev.build_eval_set(chunks, min_chunk_size=100)
+
+    if not eval_set:
+        print("Eval set failed, exiting")
+        sys.exit(1)
 
     t6 = time.time() - s6
     print("time : ", t6)
@@ -161,6 +183,10 @@ if __name__ == "__main__":
         retrieved_output = ret.retrieval_hybrid(faiss_index, bm25_index)
 
     #print(retrieved_output)
+    if not retrieved_output:
+        print("Retrival failed, exiting")
+        sys.exit(1)
+
     t7 = time.time() - s7
     print("time : ", t7)
 
@@ -168,12 +194,10 @@ if __name__ == "__main__":
     print("\n----- Evaluation ------------\n")
     s8 = time.time()
 
-    use_faithfulness=False
-    use_relevancy=False
-    use_llm_correctness=False
+    use_llm_judge=False
 
     eval = Evaluation(mode, dataset_size, device, chunking_type, retrieval_type, model_name)
-    eval.evaluate(k, retrieved_output, use_faithfulness, use_relevancy, use_llm_correctness)
+    eval.evaluate(k, retrieved_output, use_llm_judge)
     
     t8 = time.time() - s8
     print("time : ", t8)
