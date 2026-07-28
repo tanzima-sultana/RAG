@@ -6,12 +6,6 @@ config.py
 chunks/
 data/
 embeddings/
-eval/
-indexing_FlatIndexIP/
-
-chunks/
-data/
-embeddings/
 index/
 evals/
 eval_qa/
