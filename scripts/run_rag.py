@@ -98,6 +98,7 @@ if __name__ == "__main__":
     t2 = time.time() - s2
     print("time : ", t2)
 
+    upstream_start = time.time()
     # -------------------- 3. Chunking
     print("\n ------- Chunking -------- \n")
     print("Type : ", chunking_type)
@@ -127,6 +128,9 @@ if __name__ == "__main__":
 
     t4 = time.time() - s4
     print("time : ", t4)
+
+    upstream_time = time.time() - upstream_start
+    print("Upstream time : ", upstream_time)
 
 
     # ----------- 5. Index 
@@ -171,7 +175,7 @@ if __name__ == "__main__":
     print("Type : ", retrieval_type)
     s7 = time.time()
 
-    dry_run = True
+    dry_run = False
     ret = Retrieval(dry_run, retrieval_type, chunks, eval_set, k, reranking, rerank_k, model_name, device)
 
     retrieved_output = None 
@@ -194,7 +198,7 @@ if __name__ == "__main__":
     print("\n----- Evaluation ------------\n")
     s8 = time.time()
 
-    use_llm_judge=False
+    use_llm_judge=True
 
     eval = Evaluation(mode, dataset_size, device, chunking_type, retrieval_type, model_name)
     eval.evaluate(k, retrieved_output, use_llm_judge)
