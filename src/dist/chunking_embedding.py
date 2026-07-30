@@ -1,38 +1,53 @@
 import os
 import pickle
 import numpy as np
-
+import pyarrow as pa
+import pyarrow.parquet as pq
+import pandas as pd
+from pyspark import TaskContext
 from nltk.tokenize import sent_tokenize
 from sentence_transformers import SentenceTransformer
 from transformers import AutoTokenizer
 from pyspark.sql import SparkSession
-from pyspark.sql.types import StructType, StructField, StringType, IntegerType
+from pyspark.sql.types import StructType, StructField, StringType, IntegerType, MapType, ArrayType, FloatType
 
 from config import S3_BUCKET
 from constants import LOCAL, AWS, FIXED, SENTENCE, SEMANTIC
 from src.dist import s3_utills
 
-class Chunking:
-    def __init__(self, num_partition, mode, model_name, dataset_path, dataset_size, device, chunking_type):
-        self.num_partition = num_partition
+class Chunking_Embedding:
+    def __init__(self, mode, num_partition, model_name, dataset_path, dataset_size, device, chunking_type, em_batch_size):
+        
         self.mode = mode
+        self.num_partition = num_partition
         self.model_name = model_name
         self.dataset_path = dataset_path
         self.dataset_size = dataset_size
         self.device = device
         self.chunking_type = chunking_type
+        self.em_batch_size = em_batch_size
 
         self.model_name = model_name
 
-        self.path = f"chunks/{mode}_{dataset_size}_{device}_{chunking_type}"
-        if self.mode == AWS:
-            self.path = f"s3://{S3_BUCKET}/" + self.path
+        self.chunk_path = f"chunks/{dataset_size}_{chunking_type}.pkl"
+        self.embedding_path = f"embeddings/{dataset_size}_{chunking_type}.pkl"
 
-    def is_exists(self):
         if self.mode == AWS:
-            return s3_utills.s3_file_exists(self.path)
+            self.chunk_path = f"s3://{S3_BUCKET}/" + self.chunk_path
+            self.embedding_path = f"s3://{S3_BUCKET}/" + self.embedding_path
+            
+
+    def is_chunk_exists(self, chunk_path):
+        if self.mode == AWS:
+            return s3_utills.s3_file_exists(chunk_path)
         else:
-            return os.path.exists(self.path)
+            return os.path.exists(chunk_path)
+    
+    def is_embedding_exists(self, embedding_path):
+        if self.mode == AWS:
+            return s3_utills.s3_file_exists(embedding_path)
+        else:
+            return os.path.exists(embedding_path)
 
         
     @staticmethod
@@ -50,7 +65,7 @@ class Chunking:
     @staticmethod
     def fixed_chunking(tokenizer, doc_id, title, text, max_chunk_size, fix_chunk_overlap):
 
-        chunks = []
+        chunks_map = {}
 
         # Get the tokens from the text
         tokens = tokenizer.encode(text, add_special_tokens=False)
@@ -66,17 +81,19 @@ class Chunking:
             chunk_text = tokenizer.decode(chunk_tokens, skip_special_tokens=True)
             
             # Make CHUNK
-            chunks.append(Chunking.CHUNK(doc_id, title, chunk_id, chunk_text, len(chunk_tokens), FIXED))
+            ch = Chunking_Embedding.CHUNK(doc_id, title, chunk_id, chunk_text, len(chunk_tokens), FIXED)
+            chunks_map[ch['chunk_id']] = ch
             
             # To ensure overlap
             start += max_chunk_size - fix_chunk_overlap
             chunk_id += 1
-        return chunks
+        
+        return chunks_map
 
     # 2. Sentence
     @staticmethod
     def sentence_aware_chunking(tokenizer, doc_id, title, text, max_chunk_size, fix_chunk_overlap):
-        chunks = []
+        chunks_map = {}
 
          # Get the sentences
         sentences = sent_tokenize(text)
@@ -95,7 +112,8 @@ class Chunking:
                 # If some chunks already there need to add them
                 if current_chunk:
                     chunk_text = ' '.join(current_chunk)
-                    chunks.append(Chunking.CHUNK(doc_id, title, chunk_id, chunk_text, current_chunk_tokens, SENTENCE))
+                    ch = Chunking_Embedding.CHUNK(doc_id, title, chunk_id, chunk_text, current_chunk_tokens, SENTENCE)
+                    chunks_map[ch['chunk_id']] = ch
                     chunk_id += 1
 
                 start = 0
@@ -107,7 +125,8 @@ class Chunking:
                     chunk_text = tokenizer.decode(chunk_tokens, skip_special_tokens=True)
                     
                     # Make CHUNK
-                    chunks.append(Chunking.CHUNK(doc_id, title, chunk_id, chunk_text, len(chunk_tokens), SENTENCE))
+                    ch = Chunking_Embedding.CHUNK(doc_id, title, chunk_id, chunk_text, len(chunk_tokens), SENTENCE)
+                    chunks_map[ch['chunk_id']] = ch
 
                     # To ensure overlap
                     start += max_chunk_size - fix_chunk_overlap
@@ -125,7 +144,8 @@ class Chunking:
                 chunk_text = ' '.join(current_chunk)
 
                 # Make CHUNK
-                chunks.append(Chunking.CHUNK(doc_id, title, chunk_id, chunk_text, current_chunk_tokens, SENTENCE))
+                ch = Chunking_Embedding.CHUNK(doc_id, title, chunk_id, chunk_text, current_chunk_tokens, SENTENCE)
+                chunks_map[ch['chunk_id']] = ch
 
                 # Reset for next chunk
                 current_chunk = []
@@ -143,15 +163,16 @@ class Chunking:
         if current_chunk:
             chunk_text = ' '.join(current_chunk)
             # Make CHUNK
-            chunks.append(Chunking.CHUNK(doc_id, title, chunk_id, chunk_text, current_chunk_tokens, SENTENCE))
+            ch = Chunking_Embedding.CHUNK(doc_id, title, chunk_id, chunk_text, current_chunk_tokens, SENTENCE)
+            chunks_map[ch['chunk_id']] = ch
 
         # Return
-        return chunks
+        return chunks_map
 
     # 3. Semantic
     @staticmethod
     def semantic_chunking(model, tokenizer, doc_id, title, text, max_chunk_size, fix_chunk_overlap, semantic_threshold):
-        chunks = []
+        chunks_map = {}
 
         sentences = sent_tokenize(text)
 
@@ -173,7 +194,8 @@ class Chunking:
                 # If some chunks already there need to add them
                 if current_chunk:
                     chunk_text = ' '.join(current_chunk)
-                    chunks.append(Chunking.CHUNK(doc_id, title, chunk_id, chunk_text, current_chunk_tokens, SEMANTIC))
+                    ch = Chunking_Embedding.CHUNK(doc_id, title, chunk_id, chunk_text, current_chunk_tokens, SEMANTIC)
+                    chunks_map[ch['chunk_id']] = ch
                     chunk_id += 1
 
                 start = 0
@@ -182,7 +204,8 @@ class Chunking:
                     chunk_tokens = tokens[start:end]
                     chunk_text = tokenizer.decode(chunk_tokens, skip_special_tokens=True)
 
-                    chunks.append(Chunking.CHUNK(doc_id, title, chunk_id, chunk_text, len(chunk_tokens), SEMANTIC))
+                    ch = Chunking_Embedding.CHUNK(doc_id, title, chunk_id, chunk_text, len(chunk_tokens), SEMANTIC)
+                    chunks_map[ch['chunk_id']] = ch
 
                     start += max_chunk_size - fix_chunk_overlap
                     chunk_id += 1
@@ -202,7 +225,8 @@ class Chunking:
 
                 if (cosine_similarity < semantic_threshold) or (current_chunk_tokens + len(tokens) > max_chunk_size):
                     chunk_text = ' '.join(current_chunk)
-                    chunks.append(Chunking.CHUNK(doc_id, title, chunk_id, chunk_text, current_chunk_tokens, SEMANTIC))
+                    ch = Chunking_Embedding.CHUNK(doc_id, title, chunk_id, chunk_text, current_chunk_tokens, SEMANTIC)
+                    chunks_map[ch['chunk_id']] = ch
 
                     current_chunk = []
                     current_chunk_tokens = 0
@@ -217,73 +241,115 @@ class Chunking:
 
         if current_chunk:
             chunk_text = ' '.join(current_chunk)
-            chunks.append(Chunking.CHUNK(doc_id, title, chunk_id, chunk_text, current_chunk_tokens, SEMANTIC))
+            ch = Chunking_Embedding.CHUNK(doc_id, title, chunk_id, chunk_text, current_chunk_tokens, SEMANTIC)
+            chunks_map[ch['chunk_id']] = ch
 
-        return chunks
+        return chunks_map
 
-    def compute_chunks(self, max_chunk_size, fix_chunk_overlap, semantic_threshold):
 
-        if self.is_exists():
-            print("loading chunking from disk")
-            return self.path
+    # --------------------- Chunks & Embedding --------------- #
+
+    def compute_chunks_embeddings(self, max_chunk_size, fix_chunk_overlap, semantic_threshold):
+
+        if self.is_chunk_exists(self.chunk_path) and self.is_embedding_exists(self.embedding_path):
+            print("loading chunks and embedding from disk : ", self.chunk_path, self.embedding_path)
+            return self.chunk_path, self.embedding_path
 
         try:
+            # spark
             builder = SparkSession.builder.appName("spark_chunking")
             if self.mode == LOCAL:
                 builder = builder.master("local[*]")
             spark = builder.getOrCreate()
             
+            # raed parquet data using spark
             df = spark.read.parquet(self.dataset_path)
             df = df.repartition(self.num_partition)
 
             # ------- Each partition -----------------
-            def process_partition(rows, model_name, device, chunking_type, max_chunk_size, fix_chunk_overlap, semantic_threshold):
-                tokenizer = AutoTokenizer.from_pretrained(f"sentence-transformers/{model_name}")
-                
-                model = None
-                if chunking_type == SEMANTIC:
-                    model = SentenceTransformer(model_name, device=device)
+            def process_partition(rows, chunk_path, embedding_path, 
+                                  model_name, device, chunking_type, 
+                                  max_chunk_size, fix_chunk_overlap, semantic_threshold, em_batch_size):
 
+                partition_id = TaskContext.get().partitionId()
+
+                model = SentenceTransformer(model_name, device=device)
+
+                # ---------- Chunking
+                tokenizer = AutoTokenizer.from_pretrained(f"sentence-transformers/{model_name}")
+
+                chunk_records = {}
                 for row in rows:
                     doc_id = row['doc_id']
                     title = row['title']
                     text = row['text']
 
                     if chunking_type == FIXED:
-                        chunks = Chunking.fixed_chunking(tokenizer, doc_id, title, text, max_chunk_size, fix_chunk_overlap)
+                        chunks = Chunking_Embedding.fixed_chunking(tokenizer, doc_id, title, text, max_chunk_size, fix_chunk_overlap)
                     elif chunking_type == SENTENCE:
-                        chunks = Chunking.sentence_aware_chunking(tokenizer, doc_id, title, text, max_chunk_size, fix_chunk_overlap)
+                        chunks = Chunking_Embedding.sentence_aware_chunking(tokenizer, doc_id, title, text, max_chunk_size, fix_chunk_overlap)
                     else:
-                        chunks = Chunking.semantic_chunking(model, tokenizer, doc_id, title, text, max_chunk_size, fix_chunk_overlap, semantic_threshold)
+                        chunks = Chunking_Embedding.semantic_chunking(model, tokenizer, doc_id, title, text, max_chunk_size, fix_chunk_overlap, semantic_threshold)
 
-                    for c in chunks:
-                        yield c
+                    chunk_records.update(chunks)
+                
+                if chunk_records:
+                    # create dir
+                    out_chunk_path = f"{chunk_path}/part-{partition_id:05d}.parquet"
+                    os.makedirs(os.path.dirname(out_chunk_path), exist_ok=True)
+
+                    with open(out_chunk_path, 'wb') as f:
+                        pickle.dump(chunk_records, f)
+                else:
+                    yield 0
+                    return 
+                
+                # --------------- Embedding 
+                chunk_ids = list(chunk_records.keys())
+                chunks = list(chunk_records.values())
+
+                #chunk_ids = [r["chunk_id"] for r in chunks]
+                #doc_ids = [r["doc_id"] for r in chunks]
+                #titles = [r["title"] for r in chunks]
+                texts = [r["chunk_text"] for r in chunks]
+
+                embeddings = model.encode(texts, batch_size=em_batch_size, convert_to_numpy=True)
+
+                embedding_records = {}
+                for chunk_id in chunk_ids:
+                    embedding_records[chunk_id] = embeddings
+                
+                if embedding_records:
+                    # create dir
+                    out_embedding_path = f"{embedding_path}/part-{partition_id:05d}.parquet"
+                    os.makedirs(os.path.dirname(out_embedding_path), exist_ok=True)
+
+                    with open(out_embedding_path, 'wb') as f:
+                        pickle.dump(embedding_records, f)
+                else:
+                    yield 0
+                    return 
+
+                yield partition_id
+
             # ----------------------
 
-            chunks_rdd = df.rdd.mapPartitions(
+            partition_ids = df.rdd.mapPartitions(
                 lambda rows: process_partition(
-                    rows, self.model_name, self.device, self.chunking_type,
-                    max_chunk_size, fix_chunk_overlap, semantic_threshold
+                    rows, self.chunk_path, self.embedding_path, self.model_name, self.device, self.chunking_type,
+                    max_chunk_size, fix_chunk_overlap, semantic_threshold, self.em_batch_size
                 )
-            )
+            ).collect()    
+            spark.stop()
 
-            schema = StructType([
-                StructField("doc_id", StringType()),
-                StructField("title", StringType()),
-                StructField("chunk_id", StringType()),
-                StructField("chunk_text", StringType()),
-                StructField("chunk_size", IntegerType()),
-                StructField("chunking_type", StringType()),
-            ])
+            print(partition_ids)
 
-            chunks_df = spark.createDataFrame(chunks_rdd, schema)
-            chunks_df.write.mode("overwrite").parquet(self.path)
         except Exception as e:
             print(f"Chunking failed: {e}")
-            return None
+            return None, None
         
-        if not self.is_exists():
-            print("Chunking write produced no output")
-            return None
-    
-        return self.path
+        if not self.is_chunk_exists(self.chunk_path) or not self.is_embedding_exists(self.embedding_path):
+            print("Chunking or embedding write produced no output")
+            return None, None
+
+        return self.chunk_path, self.embedding_path

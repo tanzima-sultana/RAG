@@ -128,6 +128,8 @@ class Retrieval:
          search_indices = dense_indices[i]
 
          if self.reranking == 1:
+            s = time.time()
+
             # already top rerank_k retrieved, now rerank down to k
             temp_retrieved_chunk_ids = []
             temp_retrieved_chunk_texts = []
@@ -143,6 +145,9 @@ class Retrieval:
 
             retrieved_chunk_ids = [cid for cid, score in reranked][:self.k]
             retrieved_chunk_texts = [chunk_id_to_text[cid] for cid in retrieved_chunk_ids]
+
+            t = time.time() - s
+            print("Rerank time : ", t)
          else:
             for j in search_indices:
                if j == -1:
@@ -176,7 +181,7 @@ class Retrieval:
             retrieved_outputs.append(self.RETRIEVED_OUTPUT(
                out['chunk_id'], out['retrieved_chunk_ids'], out['retrieved_chunk_texts'], out['qus'], out['context'],
                generated_ans, out['ground_truth_ans'], out['k'],
-               api_response['cost'], api_response['latency']
+               api_response['cost'], api_response['latency'] / batch_size
             ))
       
       #print("Retrieved Output\n")
@@ -214,6 +219,8 @@ class Retrieval:
          scores = bm25_index.get_scores(tokenized_qus)  # one score per chunk, same order as chunks list
 
          if self.reranking == 1:
+            s = time.time()
+
             search_indices = np.argsort(scores)[::-1][:self.rerank_k]  # top rerank_k
             # already top rerank_k retrieved, now rerank down to k
             temp_retrieved_chunk_ids = []
@@ -230,6 +237,10 @@ class Retrieval:
 
             retrieved_chunk_ids = [cid for cid, score in reranked][:self.k]
             retrieved_chunk_texts = [chunk_id_to_text[cid] for cid in retrieved_chunk_ids]
+
+            t = time.time() - s
+            print("Rerank time : ", t)
+
          else:
             search_indices = np.argsort(scores)[::-1][:self.k]  #  take top k
             for j in search_indices:
@@ -263,7 +274,7 @@ class Retrieval:
             retrieved_outputs.append(self.RETRIEVED_OUTPUT(
                out['chunk_id'], out['retrieved_chunk_ids'], out['retrieved_chunk_texts'], out['qus'], out['context'],
                generated_ans, out['ground_truth_ans'], out['k'],
-               api_response['cost'], api_response['latency']
+               api_response['cost'], api_response['latency'] / batch_size
             ))
       
       #print("Bm25 -- Retrieved Output\n")
@@ -358,6 +369,8 @@ class Retrieval:
          
          # ----- re_ranking & K=20
          if self.reranking == 1:
+               s = time.time()
+
                # Use rerank_k instaed of small k
                temp_retrieved_chunk_ids = self.reciprocal_rank_fusion(dense_retrieved_chunk_ids, bm25_retrieved_chunk_ids, k_const=60)[:self.rerank_k]
                temp_retrieved_chunk_texts = [chunk_id_to_text[cid] for cid in temp_retrieved_chunk_ids]
@@ -368,6 +381,9 @@ class Retrieval:
                
                retrieved_chunk_ids = [cid for cid, score in reranked][:self.k]
                retrieved_chunk_texts = [chunk_id_to_text[cid] for cid in retrieved_chunk_ids]
+
+               t = time.time() - s
+               print("Rerank time : ", t)
 
          else:
                # RRF and slice at k
@@ -400,7 +416,7 @@ class Retrieval:
             retrieved_outputs.append(self.RETRIEVED_OUTPUT(
                out['chunk_id'], out['retrieved_chunk_ids'], out['retrieved_chunk_texts'], out['qus'], out['context'],
                generated_ans, out['ground_truth_ans'], out['k'],
-               api_response['cost'], api_response['latency']
+               api_response['cost'], api_response['latency'] / batch_size
             ))
       
       #print("Hybrid -- Retrieved Output\n")

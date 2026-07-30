@@ -2,24 +2,27 @@
 import os
 import pickle
 import numpy as np
-
+import pandas as pd
+import shutil
+import time 
 from nltk.tokenize import sent_tokenize
 from sentence_transformers import SentenceTransformer
 
 from constants import FIXED, SENTENCE, SEMANTIC
 
 class Chunking:
-    def __init__(self, model_name, dataset, dataset_size, device, chunking_type):
+    def __init__(self, dataset, dataset_size, device, model_name):
         self.model_name = model_name
         self.dataset = dataset
         self.dataset_size = dataset_size
         self.device = device
-        self.chunking_type = chunking_type
 
         self.model = SentenceTransformer(self.model_name, device=self.device)
         self.tokenizer = self.model.tokenizer
 
-        self.path = f"chunks/ch_{dataset_size}_{device}_{chunking_type}.pkl"
+        self.fixed_path = f"chunks/{dataset_size}_{FIXED}/"
+        self.sentence_path = f"chunks/{dataset_size}_{SENTENCE}/"
+        self.semantic_path = f"chunks/{dataset_size}_{SEMANTIC}/"
     
 
     def CHUNK(self, doc_id, title, chunk_id, chunk_text, chunk_size, chunking_type):
@@ -32,11 +35,34 @@ class Chunking:
             'chunking_type': chunking_type
         }
 
+    def _is_exists(self):
+        return os.path.exists(self.fixed_path) and os.path.exists(self.sentence_path) and os.path.exists(self.semantic_path)
+            
+    def load(self):
+        with open(self.fixed_path, "rb") as f:
+            fixed_chunks = pickle.load(f)
+        with open(self.sentence_path, "rb") as f:
+            sentence_chunks = pickle.load(f)
+        with open(self.semantic_path, "rb") as f:
+            semantic_chunks = pickle.load(f)
+        
+        return fixed_chunks, sentence_chunks, semantic_chunks
+
+    def save(self, chunks, out_path):
+        os.makedirs(os.path.dirname(out_path), exist_ok=True)
+
+        with open(out_path, 'wb') as f:
+            pickle.dump(chunks, f)
+
     # -------------- 1. Fixed
     def fixed_chunking(self, doc_id, title, text, max_chunk_size, fix_chunk_overlap):
-        chunks = []
+        #print("Fixed chunking")
+        s = time.time()
+
+        chunks = {}
         chunk_sizes = []
 
+        
         # Get the tokens from the text
         tokens = self.tokenizer.encode(text, add_special_tokens=False)
 
@@ -52,19 +78,24 @@ class Chunking:
             
             
             # Make CHUNK
-            chunks.append(self.CHUNK(doc_id, title, chunk_id, chunk_text, len(chunk_tokens), self.chunking_type))
+            ch = self.CHUNK(doc_id, title, chunk_id, chunk_text, len(chunk_tokens), FIXED)
+            chunks[ch['chunk_id']] = ch 
+
             chunk_sizes.append(len(chunk_tokens))
             
             # To ensure overlap
             start += max_chunk_size - fix_chunk_overlap
             chunk_id += 1
 
-        
-        return chunks, chunk_sizes
+        elapsed_time = time.time() - s 
+        #print(elapsed_time)
+        return chunks, chunk_sizes, elapsed_time
 
     # ----- 2. Sentence aware chunking
     def sentence_aware_chunking(self, doc_id, title, text, max_chunk_size, fix_chunk_overlap):  
-        chunks = []
+        s = time.time()
+
+        chunks = {}
         chunk_sizes = [] 
 
          # Get the sentences
@@ -84,7 +115,8 @@ class Chunking:
                 # If some chunks already there need to add them
                 if current_chunk:
                     chunk_text = ' '.join(current_chunk)
-                    chunks.append(self.CHUNK(doc_id, title, chunk_id, chunk_text, current_chunk_tokens, self.chunking_type))
+                    ch = self.CHUNK(doc_id, title, chunk_id, chunk_text, current_chunk_tokens, SENTENCE)
+                    chunks[ch['chunk_id']] = ch 
                     chunk_sizes.append(current_chunk_tokens)
                     chunk_id += 1
 
@@ -97,7 +129,8 @@ class Chunking:
                     chunk_text = self.tokenizer.decode(chunk_tokens, skip_special_tokens=True)
                     
                     # Make CHUNK
-                    chunks.append(self.CHUNK(doc_id, title, chunk_id, chunk_text, len(chunk_tokens), self.chunking_type))
+                    ch = self.CHUNK(doc_id, title, chunk_id, chunk_text, len(chunk_tokens), SENTENCE)
+                    chunks[ch['chunk_id']] = ch 
                     chunk_sizes.append(len(chunk_tokens))
 
                     # To ensure overlap
@@ -116,7 +149,8 @@ class Chunking:
                 chunk_text = ' '.join(current_chunk)
 
                 # Make CHUNK
-                chunks.append(self.CHUNK(doc_id, title, chunk_id, chunk_text, current_chunk_tokens, self.chunking_type))
+                ch = self.CHUNK(doc_id, title, chunk_id, chunk_text, current_chunk_tokens, SENTENCE)
+                chunks[ch['chunk_id']] = ch 
                 chunk_sizes.append(current_chunk_tokens)
 
                 # Reset for next chunk
@@ -135,16 +169,20 @@ class Chunking:
         if current_chunk:
             chunk_text = ' '.join(current_chunk)
             # Make CHUNK
-            chunks.append(self.CHUNK(doc_id, title, chunk_id, chunk_text, current_chunk_tokens, self.chunking_type))
+            ch = self.CHUNK(doc_id, title, chunk_id, chunk_text, current_chunk_tokens, SENTENCE)
+            chunks[ch['chunk_id']] = ch 
             chunk_sizes.append(current_chunk_tokens)
 
         # Return
-        return chunks, chunk_sizes
+        elapsed_time = time.time() - s 
+        return chunks, chunk_sizes, elapsed_time
 
 
     # --------------- 3. Semantic chunking
     def semantic_chunking(self, doc_id, title, text, max_chunk_size, fix_chunk_overlap, semantic_threshold):
-        chunks = []
+        s = time.time()
+
+        chunks = {}
         chunk_sizes = []
 
         sentences = sent_tokenize(text)
@@ -167,7 +205,8 @@ class Chunking:
                 # If some chunks already there need to add them
                 if current_chunk:
                     chunk_text = ' '.join(current_chunk)
-                    chunks.append(self.CHUNK(doc_id, title, chunk_id, chunk_text, current_chunk_tokens, self.chunking_type))
+                    ch = self.CHUNK(doc_id, title, chunk_id, chunk_text, current_chunk_tokens, SEMANTIC)
+                    chunks[ch['chunk_id']] = ch 
                     chunk_sizes.append(current_chunk_tokens)
                     chunk_id += 1
 
@@ -177,7 +216,8 @@ class Chunking:
                     chunk_tokens = tokens[start:end]
                     chunk_text = self.tokenizer.decode(chunk_tokens, skip_special_tokens=True)
 
-                    chunks.append(self.CHUNK(doc_id, title, chunk_id, chunk_text, len(chunk_tokens), self.chunking_type))
+                    ch = self.CHUNK(doc_id, title, chunk_id, chunk_text, len(chunk_tokens), SEMANTIC)
+                    chunks[ch['chunk_id']] = ch 
                     chunk_sizes.append(len(chunk_tokens))
 
                     start += max_chunk_size - fix_chunk_overlap
@@ -198,7 +238,8 @@ class Chunking:
 
                 if (cosine_similarity < semantic_threshold) or (current_chunk_tokens + len(tokens) > max_chunk_size):
                     chunk_text = ' '.join(current_chunk)
-                    chunks.append(self.CHUNK(doc_id, title, chunk_id, chunk_text, current_chunk_tokens, self.chunking_type))
+                    ch = self.CHUNK(doc_id, title, chunk_id, chunk_text, current_chunk_tokens, SEMANTIC)
+                    chunks[ch['chunk_id']] = ch 
                     chunk_sizes.append(current_chunk_tokens)
                     current_chunk = []
                     current_chunk_tokens = 0
@@ -213,53 +254,80 @@ class Chunking:
 
         if current_chunk:
             chunk_text = ' '.join(current_chunk)
-            chunks.append(self.CHUNK(doc_id, title, chunk_id, chunk_text, current_chunk_tokens, self.chunking_type))
+            ch = self.CHUNK(doc_id, title, chunk_id, chunk_text, current_chunk_tokens, SEMANTIC)
+            chunks[ch['chunk_id']] = ch 
             chunk_sizes.append(current_chunk_tokens)
 
-        return chunks, chunk_sizes
+        elapsed_time = time.time() - s 
+        return chunks, chunk_sizes, elapsed_time
             
     # -----------------------
     def compute_chunks(self, max_chunk_size, fix_chunk_overlap, semantic_threshold):
 
+        self.fixed_path = self.fixed_path + f"size_{max_chunk_size}_overlap_{fix_chunk_overlap}.pkl"
+        self.sentence_path = self.sentence_path + f"size_{max_chunk_size}_overlap_{fix_chunk_overlap}.pkl"
+        self.semantic_path = self.semantic_path + f"size_{max_chunk_size}_overlap_{fix_chunk_overlap}_threashold_{semantic_threshold}.pkl"
+
         #print("Compute chunks start")
         
         # If alraedy exists, return that
-        if os.path.exists(self.path):
-            print("Read chunks from disk : ", self.chunking_type)
-            with open(self.path, 'rb') as f:
-                cached = pickle.load(f)
-            return self.path, cached['chunks'], cached['avg_chunk_size']
+        if self._is_exists():
+            print("Read chunks from disk")
+            #return self.load()
+            return self.fixed_path, self.sentence_path, self.semantic_path
         
         try:
-            chunks = []
-            chunks_sizes = []
+            fixed_chunks = {}
+            fixed_chunks_sizes = []
+            time1 = 0
+
+            sentence_chunks = {}
+            sentence_chunk_sizes = []
+            time2 = 0
+
+            semantic_chunks = {}
+            semantic_chunk_sizes = []
+            time3 = 0
 
             for i, doc in enumerate(self.dataset):
                 #print(f"Processing doc {i}/{len(self.dataset)}")
                 doc_id = doc['doc_id']
                 title = doc['title']
                 text = doc['text']
-                
-                c1 = []
-                c2 = []
-                if self.chunking_type == FIXED:
-                    c1, c2 = self.fixed_chunking(doc_id, title, text, max_chunk_size, fix_chunk_overlap)
-                elif self.chunking_type == SENTENCE:
-                    c1, c2 = self.sentence_aware_chunking(doc_id, title, text, max_chunk_size, fix_chunk_overlap)
-                else:
-                    c1, c2 = self.semantic_chunking(doc_id, title, text, max_chunk_size, fix_chunk_overlap, semantic_threshold)
-                
-                chunks.extend(c1)
-                chunks_sizes.extend(c2)
-        
-            avg_chunk_size = np.mean(chunks_sizes)
+
+                c11, c12, t1 = self.fixed_chunking(doc_id, title, text, max_chunk_size, fix_chunk_overlap)
+                fixed_chunks.update(c11)
+                fixed_chunks_sizes.extend(c12)
+                time1 += t1
+
+                c21, c22, t2 = self.sentence_aware_chunking(doc_id, title, text, max_chunk_size, fix_chunk_overlap)
+                sentence_chunks.update(c21) 
+                sentence_chunk_sizes.extend(c22)
+                time2 += t2
+
+                c31, c32, t3 = self.semantic_chunking(doc_id, title, text, max_chunk_size, fix_chunk_overlap, semantic_threshold)
+                semantic_chunks.update(c31)
+                semantic_chunk_sizes.extend(c32)
+                time3 += t3
             
-            os.makedirs(os.path.dirname(self.path), exist_ok=True)
-            with open(self.path, 'wb') as f:
-                pickle.dump({'chunks': chunks, 'avg_chunk_size': avg_chunk_size}, f)
-            
-            return self.path, chunks, avg_chunk_size
-        
+            # Save
+            self.save(fixed_chunks, self.fixed_path)
+            self.save(sentence_chunks, self.sentence_path)
+            self.save(semantic_chunks, self.semantic_path)
+
+            print("Avg chunk sizes : fixed, sentence, semantic : ", np.mean(fixed_chunks_sizes), np.mean(sentence_chunk_sizes), np.mean(semantic_chunk_sizes))
+            print("Total time for chunks : fixed, sentence, semantic : ", time1, time2, time3)
+
+            return self.fixed_path, self.sentence_path, self.semantic_path
+
         except Exception as e:
             print(f"Chunking failed: {e}")
+            # remove dir if fails
+            if os.path.exists(self.fixed_path):
+                shutil.rmtree(self.fixed_path)
+            if os.path.exists(self.sentence_path):
+                shutil.rmtree(self.sentence_path)
+            if os.path.exists(self.semantic_path):
+                shutil.rmtree(self.semantic_path)
+
             return None, None, None

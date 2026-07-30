@@ -7,14 +7,8 @@ import pyarrow.parquet as pq
 from constants import CPU, DENSE, BM25, HYBRID
 
 from src.dataset import Dataset
-
-from src.dist.chunking import Chunking
-from src.dist.embedding import Embedding
-
+from src.dist.chunking_embedding import Chunking_Embedding
 from src.indexing import Indexing
-from src.eval_qa import EvalQA
-from src.retrieval import Retrieval
-from src.evaluation import Evaluation
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Distributed RAG pipeline")
@@ -45,18 +39,6 @@ def parse_args():
     parser.add_argument("--indexing_type", type=str, required=True,
                          choices=["flatip", "ivf", "hnsw"],
                          help="Indexing type to use")
-    parser.add_argument("--num_eval_query", type=int, default=5,
-                         help="Number of evaluation query")
-    parser.add_argument("--k", type=int, default=5,
-                         help="Number of chunks to retrieve for eval")
-    parser.add_argument("--retrieval_type", type=str, required=True,
-                         choices=["dense", "bm25", "hybrid"],
-                         help="Retrieval method")
-    parser.add_argument("--reranking", type=int, default=0,
-                         choices=[0, 1],
-                         help="0 = no rerank, 1 = rerank")
-    parser.add_argument("--rerank_k", type=int, default=5,
-                         help="Number of chunks chosen/passed to the LLM after retrieval/reranking")
 
     return parser.parse_args()
 
@@ -82,11 +64,6 @@ if __name__ == "__main__":
     fix_chunk_overlap = args.fix_chunk_overlap
     semantic_threshold = args.semantic_threshold
     indexing_type = args.indexing_type
-    num_eval_query = args.num_eval_query
-    k = args.k
-    retrieval_type = args.retrieval_type
-    reranking = args.reranking
-    rerank_k = args.rerank_k
 
     if not torch.cuda.is_available():
         device = CPU
@@ -96,7 +73,8 @@ if __name__ == "__main__":
     s2 = time.time()
 
     df = Dataset(mode, dataset_size)
-    dataset_path = df.load_parquet_dataset_s3()
+    #dataset_path = df.load_parquet_dataset_s3()
+    dataset_path = df.load_parquet_dataset_local()
 
     if not dataset_path:
         print("Dataset failed, exiting")
@@ -106,119 +84,45 @@ if __name__ == "__main__":
     print("time : ", t2)
 
     
-    # -------------------- 3. Chunking
-    print("\n ------- Chunking -------- \n")
+    # -------------------- 3. Chunking & Embedding
+    print("\n ------- Chunking & Embedding-------- \n")
     print("Type : ", chunking_type)
 
     s3 = time.time()
 
-    ch = Chunking(num_partition, mode, model_name, dataset_path, dataset_size, device, chunking_type)
-    chunk_path = ch.compute_chunks(max_chunk_size, fix_chunk_overlap, semantic_threshold)
+    ch_em = Chunking_Embedding(mode, num_partition, model_name, dataset_path, dataset_size, device, chunking_type, batch_size)
+    chunk_path, embedding_path = ch_em.compute_chunks_embeddings(max_chunk_size, fix_chunk_overlap, semantic_threshold)
 
-    if not chunk_path:
-        print("Chunking failed, exiting")
+    if not chunk_path or not embedding_path:
+        print("Chunking or embedding failed, exiting")
         sys.exit(1)
-
-    # Read chunks
-    table = pq.read_table(chunk_path)
-    chunks = table.to_pylist()
 
     t3 = time.time() - s3
     print("time : ", t3)
 
-    
-    # ----------- 4. Embedding 
-    print("\n----- Embedding ------------\n")
-    s4 = time.time()
-
-    em = Embedding(num_partition, mode, model_name, dataset_size, device, chunking_type)
-    embedding_path = em.generate_embeddings(chunk_path, batch_size)
-
-    if not embedding_path:
-        print("Embedding failed, exiting")
-        sys.exit(1)
-
-    t4 = time.time() - s4
-    print("time : ", t4)
-
-    # ----------- 5. Index 
+    '''
+    # ----------- 4. Index 
     print("\n----- Indexing------------\n")
-    s5 = time.time()
+    s4 = time.time()
 
     idx = Indexing(mode, dataset_size, device, chunking_type, indexing_type)
 
-    faiss_index = None
-    if retrieval_type in (DENSE, HYBRID):
-        print("FAISS Indexing : ", indexing_type)
-        faiss_index = idx.generate_faiss_index(embedding_path)
+    print("FAISS Indexing : ", indexing_type)
+    faiss_index = idx.generate_faiss_index(embedding_path)
     
-    bm25_index = None 
-    if retrieval_type in (BM25, HYBRID):
-        print("Bm25 Indexing")
-        bm25_index = idx.generate_bm25_index(chunk_path)
+    print("Bm25 Indexing")
+    bm25_index = idx.generate_bm25_index(chunk_path)
 
     if not faiss_index and not bm25_index: 
         print("Index failed, exiting")
         sys.exit(1)
 
-    t5 = time.time() - s5
-    print("time : ", t5)
-
-    # ----------- 6. Evaluation Qus-Ans Set
-    print("\n----- Evaluation Qus-Ans Set------------\n")
-    s6 = time.time()
-
-    ev = EvalQA(mode, dataset_size, device, chunking_type, num_eval_query)
-    eval_set = ev.build_eval_set(chunks, min_chunk_size=100)
-
-    if not eval_set:
-        print("Eval set failed, exiting")
-        sys.exit(1)
-
-    t6 = time.time() - s6
-    print("time : ", t6)
-
-    # ----------- 7. Retrival
-    print("\n----- Retrieval------------\n")
-    print("Type : ", retrieval_type)
-    s7 = time.time()
-
-    dry_run = True
-    ret = Retrieval(dry_run, retrieval_type, chunks, eval_set, k, reranking, rerank_k, model_name, device)
-
-    retrieved_output = None 
-    if retrieval_type == DENSE:
-        retrieved_output = ret.retrieval_dense(faiss_index)
-    elif retrieval_type == BM25:
-        retrieved_output = ret.retrieval_bm25(bm25_index)
-    else:
-        retrieved_output = ret.retrieval_hybrid(faiss_index, bm25_index)
-
-    #print(retrieved_output)
-    if not retrieved_output:
-        print("Retrival failed, exiting")
-        sys.exit(1)
-
-    
-    t7 = time.time() - s7
-    print("time : ", t7)
-
-    # ----------- 8. Evaluation 
-    print("\n----- Evaluation ------------\n")
-    s8 = time.time()
-
-    use_faithfulness=False
-    use_relevancy=False
-    use_llm_correctness=False
-
-    eval = Evaluation(mode, dataset_size, device, chunking_type, retrieval_type, model_name)
-    eval.evaluate(k, retrieved_output, use_faithfulness, use_relevancy, use_llm_correctness)
-    
-    t8 = time.time() - s8
-    print("time : ", t8)
+    t4 = time.time() - s4
+    print("time : ", t4)
 
     # --------------------
     t1 = time.time() - s1
     print("\n----- Total time : ", t1)
+    '''
 
     

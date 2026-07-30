@@ -3,37 +3,60 @@ import numpy as np
 import os 
 import pyarrow as pa
 import pyarrow.parquet as pq
+import pickle
+import shutil
+import time 
 
 class Embedding:
-    def __init__(self, model_name, dataset_size, device, chunking_type):
-        self.model_name = model_name
+    def __init__(self, dataset_size, device, model_name):
+        
         self.dataset_size = dataset_size
         self.device = device
-        self.chunking_type = chunking_type
+        self.model_name = model_name
 
         self.model = SentenceTransformer(self.model_name, device=self.device)
-        self.path = f"embeddings/em_{dataset_size}_{device}_{chunking_type}.parquet"
 
-    def generate_embeddings(self, chunks):
-        if os.path.exists(self.path):
+        self.embedding_path = f"embeddings/"
+
+    def generate_embeddings(self, chunk_path):
+        
+        out_path = self.embedding_path + chunk_path.removeprefix("chunks/")
+        print("\nEmbedding path : ", out_path)
+
+        if os.path.exists(out_path):
             print("Load embeddings from disk")
-            return self.path
+            return out_path
 
         try:
+            # Load chunks
+            chunks_map = None
+            with open(chunk_path, "rb") as f:
+                chunks_map = pickle.load(f)
+
+            chunk_ids = chunks_map.keys()
+            chunks = chunks_map.values()
+
+            # Embed
+            s = time.time()
             embeddings = self.model.encode(
                 [chunk['chunk_text'] for chunk in chunks], normalize_embeddings=True
             )
+            elapsed_time = time.time() - s
+            print("time : ", elapsed_time)
 
-            table = pa.table({
-                "chunk_id": [chunk['chunk_id'] for chunk in chunks],
-                "embedding": [emb.tolist() for emb in embeddings],
-            })
+            # Map
+            embedding_map = dict(zip(chunk_ids, embeddings))
 
-            os.makedirs(os.path.dirname(self.path), exist_ok=True)
-            pq.write_table(table, self.path)
-
-            return self.path
-
+            # Save embeddings
+            os.makedirs(os.path.dirname(out_path), exist_ok=True)
+            with open(out_path, "wb") as f:
+                pickle.dump(embedding_map, f)
+            
         except Exception as e:
             print(f"Embedding failed: {e}")
+            # remove dir if fails
+            if os.path.exists(out_path):
+                shutil.rmtree(out_path)
             return None
+        
+        return out_path

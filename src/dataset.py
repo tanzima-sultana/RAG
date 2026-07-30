@@ -27,8 +27,9 @@ class Dataset:
     
     def load_parquet_dataset_local(self):
         if os.path.exists(self.path):
-            print("Loading parquet data from disk")
-            return load_dataset("parquet", data_files=self.path, split="train")   
+            #print("Loading parquet data from disk")
+            return load_dataset("parquet", data_files=self.path, split="train")  
+            #return self.path 
 
         dataset = None
         try:

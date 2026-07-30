@@ -11,9 +11,10 @@ evals/
 eval_qa/
 
 table.ods
+table1.ods
 
-output.txt
-log.txt
+build_log.txt
+eval_log.txt
 
 # Artifacts
 *.pkl

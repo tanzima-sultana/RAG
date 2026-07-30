@@ -210,32 +210,41 @@ class Evaluation:
         api_response = self.anthropic.anthropic_msg_api(prompt)
         return api_response
 
-        
+    def _doc_id_from_chunk_id(self, chunk_id):
+        return chunk_id.rsplit('_', 1)[0]
 
     # ----- Recall ----- #
     # multi-chunk : no of relevant chunks in top k / total number of questions
     # one chunk : r = 1 if that one chunk is in top k. Otherwise 0. sum(r) / total number of questions
-
-    def compute_recall_single_chunk(self, ground_truth_answer, retrieved_chunk_texts):
-        combined = ' '.join(retrieved_chunk_texts).lower()
-        return 1 if ground_truth_answer.lower() in combined else 0
+    
+    def compute_recall_single_chunk(self, gt_chunk_id, retrieved_chunk_ids):
+        gt_doc = self._doc_id_from_chunk_id(gt_chunk_id)
+        retrieved_docs = [self._doc_id_from_chunk_id(cid) for cid in retrieved_chunk_ids]
+        return 1 if gt_doc in retrieved_docs else 0
 
     # -----  Precision ----- #
     # no of relevant chunks in top k / k
     # one chunk: p = 1 if that one chunk is in top k. Otherwise 0. p / k
+    
+    def compute_precision_at_k_single_chunk(self, gt_chunk_id, retrieved_chunk_ids, k):
+        gt_doc = self._doc_id_from_chunk_id(gt_chunk_id)
 
-    def compute_precision_at_k_single_chunk(self, ground_truth_answer, retrieved_chunk_texts, k):
-        combined = ' '.join(retrieved_chunk_texts).lower()
-        return (1 if ground_truth_answer.lower() in combined else 0) / k
+        hits = 0
+        for cid in retrieved_chunk_ids:
+            cid_doc = self._doc_id_from_chunk_id(cid)
+            if cid_doc == gt_doc:
+                hits = hits + 1
+
+        return hits / k
     
     # ----- MRR ----- #
     # Mean Reciprocal Rank
     # inverse of rank position (index+1) of the first correct answer. Position of chunk_id in the retrieved chunk_ids
-
-    def compute_mrr(self, ground_truth_answer, retrieved_chunk_texts):
-        ground_truth_answer = ground_truth_answer.lower()
-        for rank, chunk_text in enumerate(retrieved_chunk_texts, start=1):
-            if ground_truth_answer in chunk_text.lower():
+    
+    def compute_mrr(self, gt_chunk_id, retrieved_chunk_ids):
+        gt_doc = self._doc_id_from_chunk_id(gt_chunk_id)
+        for rank, cid in enumerate(retrieved_chunk_ids, start=1):
+            if self._doc_id_from_chunk_id(cid) == gt_doc:
                 return 1 / rank
         return 0
 
@@ -279,6 +288,11 @@ class Evaluation:
         eval_metrices = {}
 
         total_recall = 0
+        total_precision = 0
+        total_mrr = 0
+        total_sas = 0
+        
+
         total_cost = 0
         total_latency = 0
 
@@ -295,13 +309,13 @@ class Evaluation:
             latency = output['latency']
 
             # 1. Recall
-            recall = self.compute_recall_single_chunk(ground_truth_ans, retrieved_chunk_texts)
+            recall = self.compute_recall_single_chunk(chunk_id, retrieved_chunk_ids)
 
             # 2. Precision
-            precision_at_k = self.compute_precision_at_k_single_chunk(ground_truth_ans, retrieved_chunk_texts, k)
+            precision_at_k = self.compute_precision_at_k_single_chunk(chunk_id, retrieved_chunk_ids, k)
 
             # 3. MRR and SAS score
-            mrr = self.compute_mrr(ground_truth_ans, retrieved_chunk_texts)
+            mrr = self.compute_mrr(chunk_id, retrieved_chunk_ids)
             sas_score = self.compute_semantic_similarity(generated_ans, ground_truth_ans)
 
             eval_metrices[i] = self.EVAL_METRICES(k, recall, mrr, precision_at_k, sas_score, 0, 0, 0, cost, latency)
@@ -314,6 +328,10 @@ class Evaluation:
             print("Retrieval Latency : ", latency)
 
             total_recall += recall
+            total_precision += precision_at_k
+            total_mrr += mrr 
+            total_sas += sas_score
+            
             total_cost += cost
             total_latency += latency
         
@@ -381,6 +399,9 @@ class Evaluation:
             'k': k,
             'num_questions': len(retrieved_output),
             'recall': total_recall / len(retrieved_output),
+            'precision': total_precision / len(retrieved_output),
+            'mrr': total_mrr / len(retrieved_output),
+            'sas': total_sas / len(retrieved_output),
             'avg_faithfulness': avg_ans_faithfulness,
             'avg_relevancy': avg_ans_relevancy,
             'avg_ans_lmm_correctness' : avg_ans_lmm_correctness,
