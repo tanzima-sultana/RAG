@@ -16,6 +16,9 @@ table1.ods
 build_log.txt
 eval_log.txt
 
+rag_benchmark_results.xlsx
+qdrant_setup.md
+
 # Artifacts
 *.pkl
 *.npy
