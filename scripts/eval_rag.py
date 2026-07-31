@@ -84,10 +84,7 @@ if __name__ == "__main__":
 
     
     # 2. FAISS-Index
-    faiss_path = None
-    if index_type in (INDEX_FLATIP, INDEX_IVF, INDEX_HNSW):
-        faiss_path = manifest[chunking_type][index_type]
-    faiss_index = faiss.read_index(faiss_path)
+    faiss_index = faiss.read_index(manifest[chunking_type][index_type])
 
     faiss_ids = None 
     with open(manifest[chunking_type]["chunk_ids"], "rb") as f:
@@ -128,16 +125,15 @@ if __name__ == "__main__":
     print("Type : ", retrieval_type)
     s4 = time.time()
 
-    # ------- Fixed
     ret1 = Retrieval(mock_run, mode, chunking_type, chunks_map, eval_set, k, re_ranking, rerank_k, model_name, device)
     retrieved_output = None
 
     if retrieval_type == DENSE:
         retrieved_output = ret1.retrieval_dense(faiss_index, faiss_ids)
     elif retrieval_type == BM25:
-        retrieved_output = ret1.retrieval_bm25_using_path(bm25_index, bm25_ids)
+        retrieved_output = ret1.retrieval_bm25(bm25_index, bm25_ids)
     elif retrieval_type == HYBRID:
-        retrieved_output = ret1.retrieval_hybrid_using_path(faiss_index, faiss_ids, bm25_index, bm25_ids)
+        retrieved_output = ret1.retrieval_hybrid(faiss_index, faiss_ids, bm25_index, bm25_ids)
     else:
         # Qdrant
         collection_name = qdrant_name
@@ -152,8 +148,7 @@ if __name__ == "__main__":
 
     use_llm_judge=False
     eval = Evaluation(mode, dataset_size, model_name, use_llm_judge)
-
-    eval.evaluate(k, retrieved_output)
+    eval_summary = eval.evaluate(k, retrieved_output)
     
     t8 = time.time() - s8
     print("time : ", t8)

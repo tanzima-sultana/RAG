@@ -2,9 +2,10 @@
 import faiss
 import pickle
 import json 
+import sys 
 
 from config import S3_BUCKET
-from constants import LOCAL, AWS
+from constants import LOCAL, AWS, FIXED, SENTENCE, SEMANTIC, DENSE, BM25, HYBRID, INDEX_FLATIP, INDEX_IVF, INDEX_HNSW
 
 CHUNKS_MAP = None
 FAISS_INDEX = None
@@ -23,26 +24,38 @@ def load_state(mode, dataset_size, chunking_type, index_type):
     with open(manifest_path, "r") as f:
         manifest = json.load(f)
 
-    chunk_path = manifest[chunking_type]["chunk_path"]
-
-    faiss_path = manifest[chunking_type][index_type]
-    faiss_ids_path = manifest[chunking_type]["chunk_ids"]
-
-    bm25_path = manifest[chunking_type]["bm25"]
-    bm25_ids_path = manifest[chunking_type]["bm25_ids"]
-
-    # Load chunks
-    with open(chunk_path, "rb") as f:
+    # 1. Chunks
+    CHUNKS_MAP = None 
+    with open(manifest[chunking_type]["chunk_path"], "rb") as f:
         CHUNKS_MAP = pickle.load(f)
+    
+    if not CHUNKS_MAP:
+        print("Load chunks_map failed, exiting")
+        sys.exit(1)
 
-    # Load index
-    FAISS_INDEX = faiss.read_index(faiss_path)
-    with open(faiss_ids_path, "rb") as f:
+     # 2. FAISS-Index
+    FAISS_INDEX = faiss.read_index(manifest[chunking_type][index_type])
+
+    FAISS_IDS = None 
+    with open(manifest[chunking_type]["chunk_ids"], "rb") as f:
         FAISS_IDS = pickle.load(f)
-    with open(bm25_path, "rb") as f:
+    
+    if not FAISS_INDEX or not FAISS_IDS:
+        print("Load faiss failed, exiting")
+        sys.exit(1)
+    
+    # 3. BM25-Index
+    BM25_INDEX = None 
+    with open(manifest[chunking_type][BM25] , "rb") as f:
         BM25_INDEX = pickle.load(f)
-    with open(bm25_ids_path, "rb") as f:
+
+    BM25_IDS = None 
+    with open(manifest[chunking_type]["bm25_ids"] , "rb") as f:
         BM25_IDS = pickle.load(f)
     
-    # Qdrant
+    if not BM25_INDEX or not BM25_IDS:
+        print("Load faiss failed, exiting")
+        sys.exit(1)
+    
+    # 4. Qdrant name
     QDRANT_NAME = manifest[chunking_type]["vectordb"] 

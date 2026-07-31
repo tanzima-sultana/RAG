@@ -1,7 +1,11 @@
 #!/bin/bash
 
+source ~/pyenv/bin/activate
+
+export PYTHONPATH=$(pwd)
+
 MODE="local" # local, aws
-DATASET_SIZE=1000
+DATASET_SIZE=5000
 CHUNKING_TYPE="fixed" #"fixed", "sentence", "semantic"
 INDEX_TYPE="flatip" #"flatip", "ivf", "hnsw"
 

@@ -412,4 +412,6 @@ class Evaluation:
 
         print(eval_summary)
 
+        return eval_summary
+
 
