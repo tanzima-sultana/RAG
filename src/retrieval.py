@@ -1,6 +1,15 @@
 from sentence_transformers import SentenceTransformer, CrossEncoder
 import numpy as np
 import time
+import faiss
+import pickle 
+from qdrant_client import QdrantClient
+from qdrant_client.models import Distance, VectorParams, PointStruct
+
+
+from config import DOCKER_PORT
+from constants import LOCAL, AWS, DENSE, BM25, HYBRID, VECTOR_DB
+
 from src.anthropic_api import AnthropicAPI
 
 # Eval Set format
@@ -10,10 +19,10 @@ from src.anthropic_api import AnthropicAPI
 
 
 class Retrieval:
-   def __init__(self, dry_run, retrieval_type, chunks, eval_set, k, reranking, rerank_k, model_name, device):
+   def __init__(self, dry_run, mode,  chunk_path, eval_set, k, reranking, rerank_k, model_name, device):
       self.dry_run = dry_run
-      self.retrieval_type = retrieval_type
-      self.chunks = chunks 
+      self.mode = mode 
+      self.chunk_path = chunk_path.removesuffix(".pkl")
       self.eval_set = eval_set 
       self.k = k 
       self.reranking = reranking
@@ -21,11 +30,18 @@ class Retrieval:
       self.model_name = model_name
       self.device = device
 
+      # Load chunks
+      self.chunks_map = None
+      with open(chunk_path, "rb") as f:
+            self.chunks_map = pickle.load(f)
+
       self.model = SentenceTransformer(self.model_name, device=self.device)
       self.cross_encoder = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2') 
    
-   def RETRIEVED_OUTPUT(self, chunk_id, retrieved_chunk_ids, retrieved_chunk_texts, qus, context, generated_ans, ground_truth_ans, k, cost, latency):
+   def RETRIEVED_OUTPUT(self, retrieval_type, chunk_id, retrieved_chunk_ids, retrieved_chunk_texts, qus, context, generated_ans, ground_truth_ans, k, cost, latency):
       return {
+         'retrieval_type' : retrieval_type,
+         'chunk_type' : self.chunk_path,
          'chunk_id' : chunk_id,
          'retrieved_chunk_ids' : retrieved_chunk_ids,
          'retrieved_chunk_texts' : retrieved_chunk_texts,
@@ -91,9 +107,38 @@ class Retrieval:
 
       return results
    
+   def load_ids(self, path):
+        if self.mode == AWS:
+            import s3fs
+            fs = s3fs.S3FileSystem()
+            with fs.open(path, 'rb') as f:
+                return pickle.load(f)
+        else:
+            with open(path, 'rb') as f:
+                return pickle.load(f)
+            
+   def load_faiss(self, path):
+        print(f"Load indexing FAISS-faltip from disk")
+        if self.mode == AWS:
+            import s3fs
+            local_tmp = "/tmp/index.faiss"
+            fs = s3fs.S3FileSystem()
+            fs.get(path, local_tmp)
+            return faiss.read_index(local_tmp)
+        else:
+            return faiss.read_index(path)
+        
    # 1. Dense
 
-   def retrieval_dense(self, faiss_index):
+   def retrieval_dense(self, faiss_path, ids_path):
+
+      # 3 type of chunk_id 
+      # chunk_id from chunks map
+      # chunk_id from index
+      # chunk_id from eval_set
+
+      faiss_idx = self.load_faiss(faiss_path)
+      ids_from_idx = self.load_ids(ids_path)
 
       retrieved_outputs = []
       temp_outputs = []
@@ -107,17 +152,15 @@ class Retrieval:
       print("query_embeddings shape - ", query_embeddings.shape)
 
       # 2. Find the closest k (or rerank_k) indices
+      # same index faiss belongs to the same index chunks
       if self.reranking == 1:
-         distances, dense_indices = faiss_index.search(query_embeddings, self.rerank_k)
+         distances, dense_indices = faiss_idx.search(query_embeddings, self.rerank_k)
       else:
-         distances, dense_indices = faiss_index.search(query_embeddings, self.k)
-      
-
-      chunk_id_to_text = {chunk['chunk_id']: chunk['chunk_text'] for chunk in self.chunks}
+         distances, dense_indices = faiss_idx.search(query_embeddings, self.k)
 
       for i, item in enumerate(self.eval_set):
 
-         chunk_id = item['chunk_id']
+         id_from_eval = item['chunk_id']
          qus = item['question']
          ground_truth_ans = item['answer']
 
@@ -136,28 +179,46 @@ class Retrieval:
             for j in search_indices:
                if j == -1:
                   continue 
-               temp_retrieved_chunk_ids.append(self.chunks[j]['chunk_id'])
-               temp_retrieved_chunk_texts.append(self.chunks[j]['chunk_text'])
+               # bring the chunk_id from the same index as j from ids_from_idx
+               chunk_id = ids_from_idx[j]
+
+               # bring chunk from chunks_map with the matching chunk_id
+               chunk = self.chunks_map[chunk_id]
+
+               # Get chunk_text from that chunk
+               chunk_text = chunk['chunk_text']
+
+               temp_retrieved_chunk_ids.append(chunk_id)
+               temp_retrieved_chunk_texts.append(chunk_text)
 
             cross_encoder_scores = self.cross_encoder.predict([(qus, text) for text in temp_retrieved_chunk_texts])
 
             reranked = sorted(zip(temp_retrieved_chunk_ids, cross_encoder_scores), key=lambda x: x[1], reverse=True)
 
             retrieved_chunk_ids = [cid for cid, score in reranked][:self.k]
-            retrieved_chunk_texts = [chunk_id_to_text[cid] for cid in retrieved_chunk_ids]
+            retrieved_chunk_texts = [self.chunks_map[cid]['chunk_text'] for cid in retrieved_chunk_ids]
 
             t = time.time() - s
-            print("Rerank time : ", t)
+            #print("Rerank time : ", t)
          else:
             for j in search_indices:
                if j == -1:
                   continue 
-               retrieved_chunk_ids.append(self.chunks[j]['chunk_id'])
-               retrieved_chunk_texts.append(self.chunks[j]['chunk_text'])
+               # bring the chunk_id from the same index as j from ids_from_idx
+               chunk_id = ids_from_idx[j]
+
+               # bring chunk from chunks_map with the matching chunk_id
+               chunk = self.chunks_map[chunk_id]
+
+               # Get chunk_text from that chunk
+               chunk_text = chunk['chunk_text']
+
+               retrieved_chunk_ids.append(chunk_id)
+               retrieved_chunk_texts.append(chunk_text)
          
          # 4. Create context for each eval question
          context = ' '.join(retrieved_chunk_texts)
-         temp_outputs.append(self.RETRIEVED_OUTPUT(chunk_id, retrieved_chunk_ids, retrieved_chunk_texts, qus, context, "", ground_truth_ans, self.k, "", ""))
+         temp_outputs.append(self.RETRIEVED_OUTPUT(DENSE, id_from_eval, retrieved_chunk_ids, retrieved_chunk_texts, qus, context, "", ground_truth_ans, self.k, "", ""))
       
 
       # 5. Use retrieved_outputs for batch API processing and update its empty field
@@ -179,7 +240,7 @@ class Retrieval:
                print(f"WARNING: no answer returned for chunk_id {out['chunk_id']}")
             
             retrieved_outputs.append(self.RETRIEVED_OUTPUT(
-               out['chunk_id'], out['retrieved_chunk_ids'], out['retrieved_chunk_texts'], out['qus'], out['context'],
+               DENSE, out['chunk_id'], out['retrieved_chunk_ids'], out['retrieved_chunk_texts'], out['qus'], out['context'],
                generated_ans, out['ground_truth_ans'], out['k'],
                api_response['cost'], api_response['latency'] / batch_size
             ))
@@ -191,10 +252,29 @@ class Retrieval:
    
    # -------------------- 2. BM25
 
+   def load_bm25(self, path):
+        if self.mode == AWS:
+            import s3fs
+            fs = s3fs.S3FileSystem()
+            with fs.open(path, 'rb') as f:
+                return pickle.load(f)
+        else:
+            with open(path, 'rb') as f:
+                return pickle.load(f)
+            
    def tokenize_chunk_text(self, text):
         return text.lower().split()
    
-   def retrieval_bm25(self, bm25_index):
+   def retrieval_bm25(self, bm25_path, ids_path):
+
+      # 3 type of chunk_id 
+      # chunk_id from chunks map
+      # chunk_id from index
+      # chunk_id from eval_set
+
+      bm25_idx = self.load_bm25(bm25_path)
+      ids_from_idx = self.load_ids(ids_path)
+
 
       retrieved_outputs = []
       temp_outputs = []
@@ -203,11 +283,9 @@ class Retrieval:
 
       questions = [item['question'] for item in self.eval_set]
 
-      chunk_id_to_text = {chunk['chunk_id']: chunk['chunk_text'] for chunk in self.chunks}
-
       for i, item in enumerate(self.eval_set):
 
-         chunk_id = item['chunk_id']
+         id_from_eval = item['chunk_id']
          qus = item['question']
          ground_truth_ans = item['answer']
 
@@ -216,7 +294,7 @@ class Retrieval:
          retrieved_chunk_texts = []
 
          tokenized_qus = self.tokenize_chunk_text(qus) # Tokenize qus
-         scores = bm25_index.get_scores(tokenized_qus)  # one score per chunk, same order as chunks list
+         scores = bm25_idx.get_scores(tokenized_qus)  # one score per index, same index
 
          if self.reranking == 1:
             s = time.time()
@@ -228,30 +306,48 @@ class Retrieval:
             for j in search_indices:
                if j == -1:
                   continue 
-               temp_retrieved_chunk_ids.append(self.chunks[j]['chunk_id'])
-               temp_retrieved_chunk_texts.append(self.chunks[j]['chunk_text'])
+               # bring the chunk_id from the same index as j from ids_from_idx
+               chunk_id = ids_from_idx[j]
+
+               # bring chunk from chunks_map with the matching chunk_id
+               chunk = self.chunks_map[chunk_id]
+
+               # Get chunk_text from that chunk
+               chunk_text = chunk['chunk_text']
+
+               temp_retrieved_chunk_ids.append(chunk_id)
+               temp_retrieved_chunk_texts.append(chunk_text)
 
             cross_encoder_scores = self.cross_encoder.predict([(qus, text) for text in temp_retrieved_chunk_texts])
 
             reranked = sorted(zip(temp_retrieved_chunk_ids, cross_encoder_scores), key=lambda x: x[1], reverse=True)
 
             retrieved_chunk_ids = [cid for cid, score in reranked][:self.k]
-            retrieved_chunk_texts = [chunk_id_to_text[cid] for cid in retrieved_chunk_ids]
+            retrieved_chunk_texts = [self.chunks_map[cid]['chunk_text'] for cid in retrieved_chunk_ids]
 
             t = time.time() - s
-            print("Rerank time : ", t)
+            #print("Rerank time : ", t)
 
          else:
             search_indices = np.argsort(scores)[::-1][:self.k]  #  take top k
             for j in search_indices:
                if j == -1:
                   continue 
-               retrieved_chunk_ids.append(self.chunks[j]['chunk_id'])
-               retrieved_chunk_texts.append(self.chunks[j]['chunk_text'])
+               # bring the chunk_id from the same index as j from ids_from_idx
+               chunk_id = ids_from_idx[j]
+
+               # bring chunk from chunks_map with the matching chunk_id
+               chunk = self.chunks_map[chunk_id]
+
+               # Get chunk_text from that chunk
+               chunk_text = chunk['chunk_text']
+
+               retrieved_chunk_ids.append(chunk_id)
+               retrieved_chunk_texts.append(chunk_text)
          
          # 4. Create context for each eval question
          context = ' '.join(retrieved_chunk_texts)
-         temp_outputs.append(self.RETRIEVED_OUTPUT(chunk_id, retrieved_chunk_ids, retrieved_chunk_texts, qus, context, "", ground_truth_ans, self.k, "", ""))
+         temp_outputs.append(self.RETRIEVED_OUTPUT(BM25, id_from_eval, retrieved_chunk_ids, retrieved_chunk_texts, qus, context, "", ground_truth_ans, self.k, "", ""))
 
       # 5. Use retrieved_outputs for batch API processing and update its empty field
       batch_size = 5
@@ -272,7 +368,7 @@ class Retrieval:
                print(f"WARNING: no answer returned for chunk_id {out['chunk_id']}")
             
             retrieved_outputs.append(self.RETRIEVED_OUTPUT(
-               out['chunk_id'], out['retrieved_chunk_ids'], out['retrieved_chunk_texts'], out['qus'], out['context'],
+               BM25, out['chunk_id'], out['retrieved_chunk_ids'], out['retrieved_chunk_texts'], out['qus'], out['context'],
                generated_ans, out['ground_truth_ans'], out['k'],
                api_response['cost'], api_response['latency'] / batch_size
             ))
@@ -301,10 +397,17 @@ class Retrieval:
       merged_chunk_ids = [chunk_id for chunk_id, score in merged_sorted]
 
       return merged_chunk_ids
+    
 
-   def retrieval_hybrid(self, faiss_index, bm25_index):
+   def retrieval_hybrid(self, faiss_path, faiss_ids_path, bm25_path, bm25_ids_path):
 
-      if faiss_index == None or bm25_index == None:
+      faiss_idx = self.load_faiss(faiss_path)
+      faiss_ids = self.load_ids(faiss_ids_path)
+
+      bm25_idx = self.load_bm25(bm25_path)
+      bm25_ids = self.load_ids(bm25_ids_path)
+
+      if faiss_idx == None or bm25_idx == None:
          print("One of the index is empty. Error")
          return []
 
@@ -321,15 +424,13 @@ class Retrieval:
 
       # 2. Find the closest k (or rerank_k) indices
       if self.reranking == 1:
-         distances, dense_indices = faiss_index.search(query_embeddings, self.rerank_k)
+         distances, dense_indices = faiss_idx.search(query_embeddings, self.rerank_k)
       else:
-         distances, dense_indices = faiss_index.search(query_embeddings, self.k)
-      
-      chunk_id_to_text = {chunk['chunk_id']: chunk['chunk_text'] for chunk in self.chunks}
+         distances, dense_indices = faiss_idx.search(query_embeddings, self.k)
 
       for i, item in enumerate(self.eval_set):
 
-         chunk_id = item['chunk_id']
+         id_from_eval = item['chunk_id']
          qus = item['question']
          ground_truth_ans = item['answer']
 
@@ -341,16 +442,25 @@ class Retrieval:
          dense_search_indices = dense_indices[i]
          # Retieve chunks
          dense_retrieved_chunk_ids = []
-         dense_retrieved_chunk_texts =[]
+         #dense_retrieved_chunk_texts =[]
          for j in dense_search_indices:
                if j == -1:
                   continue 
-               dense_retrieved_chunk_ids.append(self.chunks[j]['chunk_id'])
-               dense_retrieved_chunk_texts.append(self.chunks[j]['chunk_text'])
+               # bring the chunk_id from the same index as j from ids_from_idx
+               chunk_id = faiss_ids[j]
+
+               # bring chunk from chunks_map with the matching chunk_id
+               #chunk = self.chunks_map[chunk_id]
+
+               # Get chunk_text from that chunk
+               #chunk_text = chunk['chunk_text']
+
+               dense_retrieved_chunk_ids.append(chunk_id)
+               #dense_retrieved_chunk_texts.append(chunk_text)
 
          # ----- For BM25
          tokenized_qus = self.tokenize_chunk_text(qus) 
-         scores = bm25_index.get_scores(tokenized_qus) 
+         scores = bm25_idx.get_scores(tokenized_qus) 
 
          bm25_search_indices = []
          if self.reranking == 1:
@@ -360,12 +470,21 @@ class Retrieval:
 
          # Retieve chunks
          bm25_retrieved_chunk_ids = []
-         bm25_retrieved_chunk_texts =[]
+         #bm25_retrieved_chunk_texts =[]
          for j in bm25_search_indices:
                if j == -1:
                   continue 
-               bm25_retrieved_chunk_ids.append(self.chunks[j]['chunk_id'])
-               bm25_retrieved_chunk_texts.append(self.chunks[j]['chunk_text'])
+               # bring the chunk_id from the same index as j from ids_from_idx
+               chunk_id = bm25_ids[j]
+
+               # bring chunk from chunks_map with the matching chunk_id
+               #chunk = self.chunks_map[chunk_id]
+
+               # Get chunk_text from that chunk
+               #chunk_text = chunk['chunk_text']
+
+               bm25_retrieved_chunk_ids.append(chunk_id)
+               #bm25_retrieved_chunk_texts.append(chunk_text)
          
          # ----- re_ranking & K=20
          if self.reranking == 1:
@@ -373,26 +492,26 @@ class Retrieval:
 
                # Use rerank_k instaed of small k
                temp_retrieved_chunk_ids = self.reciprocal_rank_fusion(dense_retrieved_chunk_ids, bm25_retrieved_chunk_ids, k_const=60)[:self.rerank_k]
-               temp_retrieved_chunk_texts = [chunk_id_to_text[cid] for cid in temp_retrieved_chunk_ids]
+               temp_retrieved_chunk_texts = [self.chunks_map[cid]['chunk_text'] for cid in temp_retrieved_chunk_ids]
 
                cross_encoder_scores = self.cross_encoder.predict([(qus, text) for text in temp_retrieved_chunk_texts])
                # sort chunk_ids by score, descending, take top k
                reranked = sorted(zip(temp_retrieved_chunk_ids, cross_encoder_scores), key=lambda x: x[1], reverse=True)
                
                retrieved_chunk_ids = [cid for cid, score in reranked][:self.k]
-               retrieved_chunk_texts = [chunk_id_to_text[cid] for cid in retrieved_chunk_ids]
+               retrieved_chunk_texts = [self.chunks_map[cid]['chunk_text'] for cid in retrieved_chunk_ids]
 
                t = time.time() - s
-               print("Rerank time : ", t)
+               #print("Rerank time : ", t)
 
          else:
                # RRF and slice at k
                retrieved_chunk_ids = self.reciprocal_rank_fusion(dense_retrieved_chunk_ids, bm25_retrieved_chunk_ids, k_const=60)[:self.k]
-               retrieved_chunk_texts = [chunk_id_to_text[cid] for cid in retrieved_chunk_ids]
+               retrieved_chunk_texts = [self.chunks_map[cid]['chunk_text'] for cid in retrieved_chunk_ids]
          
          # 4. Create context for each eval question
          context = ' '.join(retrieved_chunk_texts)
-         temp_outputs.append(self.RETRIEVED_OUTPUT(chunk_id, retrieved_chunk_ids, retrieved_chunk_texts, qus, context, "", ground_truth_ans, self.k, "", ""))
+         temp_outputs.append(self.RETRIEVED_OUTPUT(HYBRID, id_from_eval, retrieved_chunk_ids, retrieved_chunk_texts, qus, context, "", ground_truth_ans, self.k, "", ""))
       
 
       # 5. Use retrieved_outputs for batch API processing and update its empty field
@@ -414,13 +533,110 @@ class Retrieval:
                print(f"WARNING: no answer returned for chunk_id {out['chunk_id']}")
             
             retrieved_outputs.append(self.RETRIEVED_OUTPUT(
-               out['chunk_id'], out['retrieved_chunk_ids'], out['retrieved_chunk_texts'], out['qus'], out['context'],
+               HYBRID, out['chunk_id'], out['retrieved_chunk_ids'], out['retrieved_chunk_texts'], out['qus'], out['context'],
                generated_ans, out['ground_truth_ans'], out['k'],
                api_response['cost'], api_response['latency'] / batch_size
             ))
       
       #print("Hybrid -- Retrieved Output\n")
       #print(retrieved_outputs)
+
+      return retrieved_outputs
+   
+
+   # ----------- Qdrant
+   
+   def retrieval_qdrant(self, collection_name):
+
+      client = QdrantClient(host="localhost", port=DOCKER_PORT)
+
+      retrieved_outputs = []
+      temp_outputs = []
+
+      print("\n Qdrant Retrieval with reranking : ", self.reranking, ", and rerank_k : ", self.rerank_k)
+
+      questions = [item['question'] for item in self.eval_set]
+
+      # 1. Query embedding
+      query_embeddings = self.model.encode(questions, normalize_embeddings=True)
+      print("query_embeddings shape - ", query_embeddings.shape)
+
+      limit = self.rerank_k if self.reranking == 1 else self.k
+
+      for i, item in enumerate(self.eval_set):
+
+         id_from_eval = item['chunk_id']
+         qus = item['question']
+         ground_truth_ans = item['answer']
+
+         retrieved_chunk_ids = []
+         retrieved_chunk_texts = []
+
+         # 2. Search Qdrant
+         hits = client.query_points(
+            collection_name=collection_name,
+            query=query_embeddings[i].tolist(),
+            limit=limit,
+            with_payload=True
+         ).points
+
+         if self.reranking == 1:
+            s = time.time()
+
+            temp_retrieved_chunk_ids = []
+            temp_retrieved_chunk_texts = []
+            for hit in hits:
+               chunk_id = hit.payload['chunk_id']
+               chunk = self.chunks_map[chunk_id]
+               chunk_text = chunk['chunk_text']
+
+               temp_retrieved_chunk_ids.append(chunk_id)
+               temp_retrieved_chunk_texts.append(chunk_text)
+
+            cross_encoder_scores = self.cross_encoder.predict([(qus, text) for text in temp_retrieved_chunk_texts])
+
+            reranked = sorted(zip(temp_retrieved_chunk_ids, cross_encoder_scores), key=lambda x: x[1], reverse=True)
+
+            retrieved_chunk_ids = [cid for cid, score in reranked][:self.k]
+            retrieved_chunk_texts = [self.chunks_map[cid]['chunk_text'] for cid in retrieved_chunk_ids]
+
+            t = time.time() - s
+            print("Rerank time : ", t)
+         else:
+            for hit in hits:
+               chunk_id = hit.payload['chunk_id']
+               chunk = self.chunks_map[chunk_id]
+               chunk_text = chunk['chunk_text']
+
+               retrieved_chunk_ids.append(chunk_id)
+               retrieved_chunk_texts.append(chunk_text)
+
+         # 3. Create context for each eval question
+         context = ' '.join(retrieved_chunk_texts)
+         temp_outputs.append(self.RETRIEVED_OUTPUT(VECTOR_DB, id_from_eval, retrieved_chunk_ids, retrieved_chunk_texts, qus, context, "", ground_truth_ans, self.k, "", ""))
+
+      # 4. Batch API processing — identical to retrieval_dense
+      batch_size = 5
+      for start in range(0, len(temp_outputs), batch_size):
+         batch = temp_outputs[start:start + batch_size]
+
+         s = time.time()
+         api_response = self.get_answers_batch(batch)
+         e = time.time() - s
+         print("batch API response time : ", e)
+
+         answers = self.parse_answers_batch(api_response['response'])
+
+         for out in temp_outputs[start:start + batch_size]:
+            generated_ans = answers.get(out['chunk_id'], "MISSING")
+            if generated_ans == "MISSING":
+               print(f"WARNING: no answer returned for chunk_id {out['chunk_id']}")
+
+            retrieved_outputs.append(self.RETRIEVED_OUTPUT(
+               VECTOR_DB, out['chunk_id'], out['retrieved_chunk_ids'], out['retrieved_chunk_texts'], out['qus'], out['context'],
+               generated_ans, out['ground_truth_ans'], out['k'],
+               api_response['cost'], api_response['latency'] / batch_size
+            ))
 
       return retrieved_outputs
 

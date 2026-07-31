@@ -13,19 +13,17 @@ from constants import LOCAL, AWS
 from sentence_transformers import SentenceTransformer
 
 class Evaluation:
-    def __init__(self, mode, dataset_size, device, chunking_type, retrieval_type, model_name):
+    def __init__(self, mode, dataset_size, model_name, use_llm_judge):
         self.mode = mode
         self.dataset_size = dataset_size
-        self.device = device
-        self.chunking_type = chunking_type
-        self.retrieval_type = retrieval_type
         self.model_name = model_name
+        self.use_llm_judge = use_llm_judge
 
         self.model = SentenceTransformer(model_name)
 
         self.anthropic = AnthropicAPI(anthropic_model="claude-sonnet-4-6", max_tokens=4000)
 
-        self.path = f"evals/ev_{dataset_size}_{device}_{chunking_type}_{retrieval_type}"
+        self.path = f"evals/{dataset_size}"
         if self.mode == AWS:
             self.path = f"s3://{S3_BUCKET}/" + self.path
     
@@ -281,10 +279,8 @@ class Evaluation:
                 json.dump({'retrieved_output': retrieved_output, 'eval_metrices': eval_metrices}, f, indent=2)
 
 
-    def evaluate(self, k, retrieved_output, use_llm_judge):
+    def evaluate(self, k, retrieved_output):
         
-        print("Evaluation")
-
         eval_metrices = {}
 
         total_recall = 0
@@ -345,7 +341,7 @@ class Evaluation:
         answer_relevancy = []
         answer_llm_correctness = []
 
-        if use_llm_judge:
+        if self.use_llm_judge:
             batch_size = 5
             for start in range(0, len(retrieved_output), batch_size):
                 
@@ -385,17 +381,15 @@ class Evaluation:
 
         # ------------ Summary 
 
-        avg_ans_faithfulness = sum(answer_faithfulness)/len(answer_faithfulness) if use_llm_judge else 0
-        avg_ans_relevancy = sum(answer_relevancy)/len(answer_relevancy) if use_llm_judge else 0
-        avg_ans_lmm_correctness = sum(answer_llm_correctness) / len(answer_llm_correctness) if use_llm_judge else 0
+        avg_ans_faithfulness = sum(answer_faithfulness)/len(answer_faithfulness) if self.use_llm_judge else 0
+        avg_ans_relevancy = sum(answer_relevancy)/len(answer_relevancy) if self.use_llm_judge else 0
+        avg_ans_lmm_correctness = sum(answer_llm_correctness) / len(answer_llm_correctness) if self.use_llm_judge else 0
         
         print("recall, avg ans faithfulness, avg ans releavncy, avg_ans_lmm_correctness : ", 
             total_recall / len(retrieved_output), avg_ans_faithfulness, avg_ans_relevancy, avg_ans_lmm_correctness)
 
         eval_summary = {
             'dataset_size': self.dataset_size,
-            'retrieval_type': self.retrieval_type,
-            'chunking_type': self.chunking_type,
             'k': k,
             'num_questions': len(retrieved_output),
             'recall': total_recall / len(retrieved_output),
@@ -410,5 +404,12 @@ class Evaluation:
         }
 
         self.save(retrieved_output, eval_summary, eval_metrices)
+
+        print("\nEvaluation")
+        print(retrieved_output[0]['retrieval_type'])
+        print(retrieved_output[0]['chunk_type'])
+        print("\nEval summary : ")
+
+        print(eval_summary)
 
 

@@ -20,6 +20,7 @@ INDEX_HNSW="hnsw"
 DENSE="dense"
 BM25="bm25"
 HYBRID="hybrid"
+VECTOR_DB="vector_db"
 
 # API Cost
 

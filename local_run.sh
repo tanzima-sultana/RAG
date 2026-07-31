@@ -28,20 +28,30 @@ python3 scripts/build_rag.py \
   --hnsw_m $HNSW_M \
   2>&1 | tee "$BUILD_LOG"
 
-  # ------------ Eval 
+# ------------ Eval 
 
+MOCK_RUN=1
+CHUNKING_TYPE="fixed" #"fixed", "sentence", "semantic"
+INDEX_TYPE="flatip" #"flatip", "ivf", "hnsw"
+RETRIEVAL_TYPE="dense" #"dense", "bm25", "hybrid", "vectordb"
 NUM_QUERIES=20
 K=5
-RETRIEVAL_TYPE="dense" #"dense", "bm25", "hybrid"
-RE_RANKING=1 # 0 = no rerank, 1 = rerank
+RE_RANKING=0 # 0 = no rerank, 1 = rerank
 RERANK_K=20
 
 EVAL_LOG="eval_log.txt"
 
 python3 scripts/eval_rag.py \
+  --mock_run $MOCK_RUN \
+  --mode $MODE \
+  --device $DEVICE \
+  --model_name $MODEL_NAME \
+  --dataset_size $DATASET_SIZE \
+  --chunking_type $CHUNKING_TYPE \
+  --index_type $INDEX_TYPE \
+  --retrieval_type $RETRIEVAL_TYPE \
   --num_queries $NUM_QUERIES \
   --k $K \
-  --retrieval_type $RETRIEVAL_TYPE \
   --re_ranking $RE_RANKING \
   --rerank_k $RERANK_K \
   2>&1 | tee "$EVAL_LOG"

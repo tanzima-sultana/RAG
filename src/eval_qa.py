@@ -3,6 +3,7 @@ import os
 import json
 import io
 import boto3
+import pickle
 
 from config import S3_BUCKET
 from constants import SEED, LOCAL, AWS
@@ -10,14 +11,13 @@ from src.dist import s3_utills
 from src.anthropic_api import AnthropicAPI
 
 class EvalQA:
-   def __init__(self, mode, dataset_size, device, chunking_type, no_queries):
+   def __init__(self, mock_run, mode, dataset_size, num_queries):
+      self.mock_run = mock_run
       self.mode = mode
       self.dataset_size = dataset_size
-      self.device = device
-      self.chunking_type = chunking_type
-      self.no_queries = no_queries
+      self.num_queries = num_queries
 
-      self.path = f"eval_qa/qa_{no_queries}"
+      self.path = f"eval_qa/{dataset_size}_{num_queries}"
       if self.mode == AWS:
             self.path = f"s3://{S3_BUCKET}/" + self.path
 
@@ -31,8 +31,8 @@ class EvalQA:
    
    def get_sample_chunks(self, chunks, min_chunk_size, no_of_chunks):
       temp_chunks = [c for c in chunks if c['chunk_size'] >= min_chunk_size]
-      if self.no_queries > len(temp_chunks):
-         raise ValueError(f"Requested {self.no_queries} samples but only {len(temp_chunks)} chunks meet min_chunk_size={min_chunk_size}")
+      if self.num_queries > len(temp_chunks):
+         raise ValueError(f"Requested {self.num_queries} samples but only {len(temp_chunks)} chunks meet min_chunk_size={min_chunk_size}")
       random.seed(SEED)
       return random.sample(temp_chunks, no_of_chunks)
    
@@ -61,6 +61,12 @@ class EvalQA:
       return results
    
    def generate_qa_batch(self, chunks):
+      if self.mock_run == 1:
+         mock_response = ""
+         for chunk in chunks:
+            mock_response += f"CHUNK_ID: {chunk['chunk_id']}\nQuestion: Mock question for {chunk['chunk_id']}?\nAnswer: Mock answer for {chunk['chunk_id']}.\n\n"
+         return mock_response
+   
       passages_block = ""
       for chunk in chunks:
          passages_block += f"\n[CHUNK_ID: {chunk['chunk_id']}]\n{chunk['chunk_text']}\n"
@@ -85,44 +91,56 @@ class EvalQA:
       return api_response['response']
    
 
-   def is_exists(self):
+   def is_exists(self,eval_path):
         if self.mode == AWS:
-            return s3_utills.s3_file_exists(self.path)
+            return s3_utills.s3_file_exists(eval_path)
         else:
-            return os.path.exists(self.path)
+            return os.path.exists(eval_path)
    
-   def get_eval_set(self):
-      if self.is_exists():
+   def get_eval_set(self, eval_path):
+      if self.is_exists(eval_path):
          if self.mode == AWS:
-            bucket, key = s3_utills.get_s3_bucket_key(self.path)
+            bucket, key = s3_utills.get_s3_bucket_key(eval_path)
             buffer = io.BytesIO()
             boto3.client('s3').download_fileobj(bucket, key, buffer)
             buffer.seek(0)
             print("Loading eval_qa from disk")
             eval_set = json.load(buffer)
-            if len(eval_set) == self.no_queries:
+            if len(eval_set) == self.num_queries:
                return eval_set
          else:
-            with open(self.path, 'r') as f:
+            with open(eval_path, 'r') as f:
                   print("Loading eval_qa from disk")
                   eval_set = json.load(f)
-            if len(eval_set) == self.no_queries:
+            if len(eval_set) == self.num_queries:
                   return eval_set
       return None
 
-   def build_eval_set(self, chunks, min_chunk_size):
+   def build_eval_set(self, chunking_type, chunk_path, min_chunk_size):
       
-      eval_set = self.get_eval_set()
+      eval_path = self.path + f"_{chunking_type}"
+
+      # Avoid mock
+      if self.mock_run == 1:
+         eval_path = eval_path + f"_mock"
+
+      eval_set = self.get_eval_set(eval_path)
       if eval_set:
           return eval_set
 
+      # Load chunks
+      chunks_map = None
+      with open(chunk_path, "rb") as f:
+            chunks_map = pickle.load(f)
 
+      chunk_ids = chunks_map.keys()
+      chunks = chunks_map.values()
+          
       print("Build eval_set")
       eval_set = []
 
-      sample_chunks = self.get_sample_chunks(chunks, min_chunk_size, self.no_queries)
+      sample_chunks = self.get_sample_chunks(chunks, min_chunk_size, self.num_queries)
       
-
       raw_response = self.generate_qa_batch(sample_chunks)
       # parsed - {chunk_id -> (q, a)}
       parsed = self.parse_qa_batch_response(raw_response)
@@ -140,8 +158,8 @@ class EvalQA:
       if missing:
          print(f"WARNING: {len(missing)} chunks got no Q/A from model: {missing}")
 
-      os.makedirs(os.path.dirname(self.path), exist_ok=True)
-      with open(self.path, 'w') as f:
+      os.makedirs(os.path.dirname(eval_path), exist_ok=True)
+      with open(eval_path, 'w') as f:
          json.dump(eval_set, f, indent=2)
 
       return eval_set

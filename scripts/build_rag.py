@@ -158,19 +158,22 @@ if __name__ == "__main__":
 
     manifest = {
         "fixed": {
+            "chunk_path" : fixed_chunks_path,
             "flatip": flatip_path1, "ivf": ivf_path1, "hnsw": hnsw_path1, "chunk_ids": chunk_ids_path1, 
             "bm25": bm25_path1, "bm25_ids": bm25_ids_path1,
-            "vectordb_fixed": vectordb_fixed,
+            "vectordb": vectordb_fixed,
         },
         "sentence": {
+            "chunk_path" : sentence_chunks_path,
             "flatip": flatip_path2, "ivf": ivf_path2, "hnsw": hnsw_path2, "chunk_ids": chunk_ids_path2, 
             "bm25": bm25_path2, "bm25_ids": bm25_ids_path2,
-            "vectordb_sentence": vectordb_sentence,
+            "vectordb": vectordb_sentence,
         },
         "semantic": {
+            "chunk_path" : semantic_chunks_path,
             "flatip": flatip_path3, "ivf": ivf_path3, "hnsw": hnsw_path3, "chunk_ids": chunk_ids_path3, 
             "bm25": bm25_path3, "bm25_ids": bm25_ids_path3,
-            "vectordb_semantic": vectordb_semantic,
+            "vectordb": vectordb_semantic,
         },
     }
 
