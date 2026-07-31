@@ -115,8 +115,8 @@ class EvalQA:
             if len(eval_set) == self.num_queries:
                   return eval_set
       return None
-
-   def build_eval_set(self, chunking_type, chunk_path, min_chunk_size):
+       
+   def build_eval_set(self, chunking_type, chunks_map, min_chunk_size):
       
       eval_path = self.path + f"_{chunking_type}"
 
@@ -127,11 +127,6 @@ class EvalQA:
       eval_set = self.get_eval_set(eval_path)
       if eval_set:
           return eval_set
-
-      # Load chunks
-      chunks_map = None
-      with open(chunk_path, "rb") as f:
-            chunks_map = pickle.load(f)
 
       chunk_ids = chunks_map.keys()
       chunks = chunks_map.values()

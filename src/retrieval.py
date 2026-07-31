@@ -19,10 +19,10 @@ from src.anthropic_api import AnthropicAPI
 
 
 class Retrieval:
-   def __init__(self, dry_run, mode,  chunk_path, eval_set, k, reranking, rerank_k, model_name, device):
+   def __init__(self, dry_run, mode, chunk_type, chunks_map, eval_set, k, reranking, rerank_k, model_name, device):
       self.dry_run = dry_run
       self.mode = mode 
-      self.chunk_path = chunk_path.removesuffix(".pkl")
+      self.chunk_type = chunk_type
       self.eval_set = eval_set 
       self.k = k 
       self.reranking = reranking
@@ -31,9 +31,7 @@ class Retrieval:
       self.device = device
 
       # Load chunks
-      self.chunks_map = None
-      with open(chunk_path, "rb") as f:
-            self.chunks_map = pickle.load(f)
+      self.chunks_map = chunks_map
 
       self.model = SentenceTransformer(self.model_name, device=self.device)
       self.cross_encoder = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2') 
@@ -41,7 +39,7 @@ class Retrieval:
    def RETRIEVED_OUTPUT(self, retrieval_type, chunk_id, retrieved_chunk_ids, retrieved_chunk_texts, qus, context, generated_ans, ground_truth_ans, k, cost, latency):
       return {
          'retrieval_type' : retrieval_type,
-         'chunk_type' : self.chunk_path,
+         'chunk_type' : self.chunk_type,
          'chunk_id' : chunk_id,
          'retrieved_chunk_ids' : retrieved_chunk_ids,
          'retrieved_chunk_texts' : retrieved_chunk_texts,
@@ -130,15 +128,12 @@ class Retrieval:
         
    # 1. Dense
 
-   def retrieval_dense(self, faiss_path, ids_path):
+   def retrieval_dense(self, faiss_idx, ids_from_idx):
 
       # 3 type of chunk_id 
       # chunk_id from chunks map
       # chunk_id from index
       # chunk_id from eval_set
-
-      faiss_idx = self.load_faiss(faiss_path)
-      ids_from_idx = self.load_ids(ids_path)
 
       retrieved_outputs = []
       temp_outputs = []
@@ -264,17 +259,13 @@ class Retrieval:
             
    def tokenize_chunk_text(self, text):
         return text.lower().split()
-   
-   def retrieval_bm25(self, bm25_path, ids_path):
+
+   def retrieval_bm25(self, bm25_idx, ids_from_idx):
 
       # 3 type of chunk_id 
       # chunk_id from chunks map
       # chunk_id from index
       # chunk_id from eval_set
-
-      bm25_idx = self.load_bm25(bm25_path)
-      ids_from_idx = self.load_ids(ids_path)
-
 
       retrieved_outputs = []
       temp_outputs = []
@@ -397,15 +388,8 @@ class Retrieval:
       merged_chunk_ids = [chunk_id for chunk_id, score in merged_sorted]
 
       return merged_chunk_ids
-    
 
-   def retrieval_hybrid(self, faiss_path, faiss_ids_path, bm25_path, bm25_ids_path):
-
-      faiss_idx = self.load_faiss(faiss_path)
-      faiss_ids = self.load_ids(faiss_ids_path)
-
-      bm25_idx = self.load_bm25(bm25_path)
-      bm25_ids = self.load_ids(bm25_ids_path)
+   def retrieval_hybrid(self, faiss_idx, faiss_ids, bm25_idx, bm25_ids):
 
       if faiss_idx == None or bm25_idx == None:
          print("One of the index is empty. Error")

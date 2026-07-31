@@ -2,7 +2,8 @@ import argparse
 import time
 import json
 import sys 
-
+import pickle 
+import faiss 
 from constants import FIXED, SENTENCE, SEMANTIC, DENSE, BM25, HYBRID, INDEX_FLATIP, INDEX_IVF, INDEX_HNSW
 
 from src.eval_qa import EvalQA
@@ -72,23 +73,52 @@ if __name__ == "__main__":
     with open(manifest_path, "r") as f:
         manifest = json.load(f)
 
-    chunk_path = manifest[chunking_type]["chunk_path"]
+    # 1. Chunks
+    chunks_map = None
+    with open(manifest[chunking_type]["chunk_path"], "rb") as f:
+        chunks_map = pickle.load(f)
     
+    if not chunks_map:
+        print("Load chunks_map failed, exiting")
+        sys.exit(1)
+
+    
+    # 2. FAISS-Index
     faiss_path = None
-    faiss_ids_path = None 
     if index_type in (INDEX_FLATIP, INDEX_IVF, INDEX_HNSW):
         faiss_path = manifest[chunking_type][index_type]
-        faiss_ids_path = manifest[chunking_type]["chunk_ids"]
+    faiss_index = faiss.read_index(faiss_path)
+
+    faiss_ids = None 
+    with open(manifest[chunking_type]["chunk_ids"], "rb") as f:
+        faiss_ids = pickle.load(f)
     
-    bm25_path = manifest[chunking_type][BM25] 
-    bm25_ids_path = manifest[chunking_type]["bm25_ids"] 
+    if not faiss_index or not faiss_ids:
+        print("Load faiss failed, exiting")
+        sys.exit(1)
     
+    # 3. BM25-Index
+    bm25_index = None 
+    with open(manifest[chunking_type][BM25] , "rb") as f:
+        bm25_index = pickle.load(f)
+
+    bm25_ids = None 
+    with open(manifest[chunking_type]["bm25_ids"] , "rb") as f:
+        bm25_ids = pickle.load(f)
+    
+    if not bm25_index or not bm25_ids:
+        print("Load faiss failed, exiting")
+        sys.exit(1)
+    
+    # 4. Qdrant name
+    qdrant_name = manifest[chunking_type]["vectordb"] 
+
     # ----------- 3. Evaluation Qus-Ans Set
     print("\n----- Evaluation Qus-Ans Set------------\n")
     s3 = time.time()
 
     ev = EvalQA(mock_run, mode, dataset_size, num_queries)
-    eval_set = ev.build_eval_set(chunking_type, chunk_path, min_chunk_size=100)
+    eval_set = ev.build_eval_set(chunking_type, chunks_map, min_chunk_size=100)
 
     t3 = time.time() - s3
     print("time : ", t3)
@@ -99,18 +129,18 @@ if __name__ == "__main__":
     s4 = time.time()
 
     # ------- Fixed
-    ret1 = Retrieval(mock_run, mode, chunk_path, eval_set, k, re_ranking, rerank_k, model_name, device)
+    ret1 = Retrieval(mock_run, mode, chunking_type, chunks_map, eval_set, k, re_ranking, rerank_k, model_name, device)
     retrieved_output = None
 
     if retrieval_type == DENSE:
-        retrieved_output = ret1.retrieval_dense(faiss_path, faiss_ids_path)
+        retrieved_output = ret1.retrieval_dense(faiss_index, faiss_ids)
     elif retrieval_type == BM25:
-        retrieved_output = ret1.retrieval_bm25(bm25_path, bm25_ids_path)
+        retrieved_output = ret1.retrieval_bm25_using_path(bm25_index, bm25_ids)
     elif retrieval_type == HYBRID:
-        retrieved_output = ret1.retrieval_hybrid(faiss_path, faiss_ids_path, bm25_path, bm25_ids_path)
+        retrieved_output = ret1.retrieval_hybrid_using_path(faiss_index, faiss_ids, bm25_index, bm25_ids)
     else:
         # Qdrant
-        collection_name = manifest[chunking_type]["vectordb"] 
+        collection_name = qdrant_name
         retrieved_output = ret1.retrieval_qdrant(collection_name)
 
     t4 = time.time() - s4
