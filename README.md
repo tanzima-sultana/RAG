@@ -11,9 +11,11 @@ A retrieval-augmented generation (RAG) pipeline for benchmarking retrieval and a
 
 ## Architecture
 
-The pipeline runs in two phases: an offline **build** phase that generates all chunking, embedding, index, and eval-questions up front, and another pahse (retrieval+eval or FastApi service) phase that reads those saved files to answer queries and evaluate configurations.
+The pipeline runs in two phases: an offline build phase that generates all chunking, embedding, index, and eval-questions up front, and another pahse (retrieval+eval or FastApi service) phase that reads those saved files to answer queries and evaluate configurations.
 
-### Build Phase : run once per dataset size
+### Build Phase 
+
+Run once per dataset size
 
 ```
                               Raw Corpus
@@ -35,9 +37,10 @@ The pipeline runs in two phases: an offline **build** phase that generates all c
                             v
              Save on disk : chunks, embeddings, indexes, eval sets
 
- FAISS = FlatIP, IVF, HNSW
+FAISS = FlatIP, IVF, HNSW
+```
 
-### Retrieval+eval phase 
+### Retrieval + Eval phase 
 
 ```
    Query
