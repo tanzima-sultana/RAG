@@ -8,9 +8,9 @@ MODE="local" # local, aws
 DEVICE="cuda"
 MODEL_NAME="all-MiniLM-L6-v2"
 DATASET_SIZE=20000
-MAX_CHUNK_SISZE=256
+MAX_CHUNK_SIZE=256
 FIX_CHUNK_OVERLAP=32
-SEMANTIC_THREASHOLD=0.3
+SEMANTIC_THRESHOLD=0.3
 IVF_NLIST=256
 HNSW_M=32
 
@@ -24,9 +24,9 @@ python3 scripts/build_rag.py \
   --device $DEVICE \
   --model_name $MODEL_NAME \
   --dataset_size $DATASET_SIZE \
-  --max_chunk_size $MAX_CHUNK_SISZE \
+  --max_chunk_size $MAX_CHUNK_SIZE \
   --fix_chunk_overlap $FIX_CHUNK_OVERLAP \
-  --semantic_threshold $SEMANTIC_THREASHOLD \
+  --semantic_threshold $SEMANTIC_THRESHOLD \
   --ivf_nlist $IVF_NLIST \
   --hnsw_m $HNSW_M \
   --mock_run $MOCK_RUN \

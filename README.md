@@ -207,3 +207,142 @@ The pipeline is served through a FastAPI app. The retrieval configuration (retri
 - `run_server.sh` — starts the server (uvicorn); config via env vars, port cleanup
 - `load_test.sh` — runs the load test
 
+## Repository Structure
+
+```
+RAG/
+├── app/
+│   ├── codes/
+│   │   ├── fast_api.py          # FastAPI app; /query endpoint
+│   │   ├── state.py             # loads models once at startup, holds shared state
+│   │   ├── schemas.py           # request/response Pydantic models
+│   │   ├── query.py             # query logic: embed → retrieve → rerank → generate
+│   │   └── concurrent_req.py    # load-test client (async httpx)
+│   └── scripts/
+│       ├── run_server.sh        # start the server (uvicorn)
+│       ├── load_test.sh         # run the load test
+│       └── query_curl.sh        # sample curl request
+├── scripts/
+│   ├── build_rag.py             # build phase: chunk, embed, index, eval sets
+│   ├── eval_rag.py              # retrieval + evaluation
+│   └── run_dist_rag.py          # distributed run entry point
+├── src/
+│   ├── dist/
+│   │   ├── chunking_embedding.py
+│   │   └── s3_utills.py
+│   ├── local/
+│   │   ├── chunking.py          # fixed / sentence / semantic chunking
+│   │   └── embedding.py         # embedding generation
+│   ├── dataset.py               # dataset load
+│   ├── indexing.py              # FAISS FlatIP / IVF / HNSW
+│   ├── vector_db.py             # Qdrant backend
+│   ├── retrieval.py             # dense / sparse / hybrid retrieval
+│   ├── eval_qa.py               # eval question generation
+│   ├── evaluation.py            # metrics + LLM-as-judge
+│   └── anthropic_api.py         # Claude API wrapper
+├── config.py.template
+├── constants.py
+├── local_run.sh
+├── dist_run.sh
+├── qdrant_setup.md
+└── README.md
+```
+
+## Installation / Setup
+
+### Prerequisites
+
+- Python 3.9
+- Docker (runs the Qdrant vector database)
+- An Anthropic API key (for answer generation and LLM-as-judge evaluation)
+
+### Setup
+
+**1. Clone the repository**
+
+```bash
+git clone https://github.com/tanzima-sultana/rag-eval-pipeline.git
+cd rag-eval-pipeline
+```
+
+**2. Install requirements**
+
+```bash
+pip install -r requirements.txt
+```
+
+### Setting up Qdrant
+
+Qdrant runs in Docker. Full step-by-step instructions (installing Docker Engine, persistent storage, verification) are in [`qdrant_setup.md`](qdrant_setup.md). The short version:
+
+**1. Run Qdrant**
+
+```bash
+docker run -d -p 6333:6333 -p 6334:6334 \
+  -v <qdrant-dir>/qdrant:/qdrant/storage qdrant/qdrant
+```
+
+Port 6333 is the REST API, 6334 is gRPC, and the `-v` mount persists data across container restarts.
+
+**2. Verify it's up**
+
+```bash
+curl http://localhost:6333
+```
+
+**3. Install the Python client**
+
+```bash
+pip install qdrant-client
+```
+## How to Run
+
+**1. Start Qdrant**
+
+Make sure Docker is running, then start the Qdrant container (see [Setting up Qdrant](#setting-up-qdrant)).
+
+**2. Local run (build + eval)**
+
+```bash
+./local_run.sh
+```
+
+This runs `build_rag.py` (chunking, embedding, indexing, eval-set generation) followed by `eval_rag.py` (retrieval and evaluation).
+
+**3. Load test**
+
+In a separate terminal, from `app/scripts`:
+
+```bash
+./run_server.sh     # starts the FastAPI server
+./load_test.sh      # runs the load test against it
+```
+
+### Configuration
+
+Run parameters are set as variables at the top of `local_run.sh`. Edit them before running.
+
+**Build**
+
+- `MODE` — `local` or `aws`
+- `DEVICE` — `cuda` or `cpu`
+- `MODEL_NAME` — embedding model (`all-MiniLM-L6-v2`)
+- `DATASET_SIZE` — number of documents
+- `MAX_CHUNK_SIZE` — max chunk size
+- `FIX_CHUNK_OVERLAP` — overlap for fixed-size chunking
+- `SEMANTIC_THRESHOLD` — similarity threshold for semantic chunking
+- `IVF_NLIST` — number of IVF partitions
+- `HNSW_M` — neighbors linked per node in HNSW
+- `MOCK_RUN` — `0` for real API calls, `1` for mock responses (test pipeline without cost)
+- `NUM_QUERIES` — number of eval questions
+
+**Eval**
+
+- `CHUNKING_TYPE` — `fixed`, `sentence`, or `semantic`
+- `INDEX_TYPE` — `flatip`, `ivf`, or `hnsw`
+- `RETRIEVAL_TYPE` — `dense`, `bm25`, `hybrid`, or `vectordb`
+- `K` — number of chunks retrieved
+- `RE_RANKING` — `0` off, `1` on
+- `RERANK_K` — candidates retrieved before reranking down to `K`
+
+The same variables are set in `load_test.sh` for the serving run.
