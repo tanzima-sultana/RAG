@@ -7,12 +7,15 @@ export PYTHONPATH=$(pwd)
 MODE="local" # local, aws
 DEVICE="cuda"
 MODEL_NAME="all-MiniLM-L6-v2"
-DATASET_SIZE=5000
+DATASET_SIZE=20000
 MAX_CHUNK_SISZE=256
 FIX_CHUNK_OVERLAP=32
 SEMANTIC_THREASHOLD=0.3
 IVF_NLIST=256
 HNSW_M=32
+
+MOCK_RUN=0
+NUM_QUERIES=50
 
 BUILD_LOG="build_log.txt"
 
@@ -26,17 +29,18 @@ python3 scripts/build_rag.py \
   --semantic_threshold $SEMANTIC_THREASHOLD \
   --ivf_nlist $IVF_NLIST \
   --hnsw_m $HNSW_M \
+  --mock_run $MOCK_RUN \
+  --num_queries $NUM_QUERIES \
   2>&1 | tee "$BUILD_LOG"
 
 # ------------ Eval 
 
-MOCK_RUN=1
+
 CHUNKING_TYPE="fixed" #"fixed", "sentence", "semantic"
-INDEX_TYPE="flatip" #"flatip", "ivf", "hnsw"
-RETRIEVAL_TYPE="dense" #"dense", "bm25", "hybrid", "vectordb"
-NUM_QUERIES=20
+INDEX_TYPE="hnsw" #"flatip", "ivf", "hnsw"
+RETRIEVAL_TYPE="hybrid" #"dense", "bm25", "hybrid", "vectordb"
 K=5
-RE_RANKING=0 # 0 = no rerank, 1 = rerank
+RE_RANKING=1 # 0 = no rerank, 1 = rerank
 RERANK_K=20
 
 EVAL_LOG="eval_log.txt"

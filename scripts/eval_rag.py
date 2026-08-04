@@ -4,9 +4,9 @@ import json
 import sys 
 import pickle 
 import faiss 
+from sentence_transformers import SentenceTransformer, CrossEncoder
 from constants import FIXED, SENTENCE, SEMANTIC, DENSE, BM25, HYBRID, INDEX_FLATIP, INDEX_IVF, INDEX_HNSW
 
-from src.eval_qa import EvalQA
 from src.retrieval import Retrieval
 from src.evaluation import Evaluation
 
@@ -30,10 +30,10 @@ def parse_args():
                          choices=["fixed", "sentence", "semantic"],
                          help="Type of chunks")
     parser.add_argument("--index_type", type=str, required=True,
-                         choices=["flatip", "ivf", "hnsw", "vectordb"],
+                         choices=["flatip", "ivf", "hnsw"],
                          help="Type of retrieval")
     parser.add_argument("--retrieval_type", type=str, required=True,
-                         choices=["dense", "bm25", "hybrid"],
+                         choices=["dense", "bm25", "hybrid", "vectordb"],
                          help="Type of retrieval")
     parser.add_argument("--num_queries", type=int, default=5,
                          help="Num of eval questions")
@@ -110,22 +110,24 @@ if __name__ == "__main__":
     # 4. Qdrant name
     qdrant_name = manifest[chunking_type]["vectordb"] 
 
-    # ----------- 3. Evaluation Qus-Ans Set
-    print("\n----- Evaluation Qus-Ans Set------------\n")
-    s3 = time.time()
-
-    ev = EvalQA(mock_run, mode, dataset_size, num_queries)
-    eval_set = ev.build_eval_set(chunking_type, chunks_map, min_chunk_size=100)
-
-    t3 = time.time() - s3
-    print("time : ", t3)
+    # 5. Eval set
+    eval_set = None
+    with open(manifest[chunking_type]["eval_path"], "r") as f:
+        eval_set = json.load(f)
+    
+    if eval_set is None:    
+        print("Load eval_set failed, exiting")
+        sys.exit(1)
 
     # ----------- 4. Retrival
     print("\n----- Retrieval------------\n")
     print("Type : ", retrieval_type)
     s4 = time.time()
 
-    ret1 = Retrieval(mock_run, mode, chunking_type, chunks_map, eval_set, k, re_ranking, rerank_k, model_name, device)
+    model = SentenceTransformer(model_name, device=device)
+    cross_encoder = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2') 
+
+    ret1 = Retrieval(mock_run, mode, chunking_type, chunks_map, eval_set, k, re_ranking, rerank_k, model, cross_encoder)
     retrieved_output = None
 
     if retrieval_type == DENSE:
@@ -146,7 +148,11 @@ if __name__ == "__main__":
     print("\n----- Evaluation ------------\n")
     s8 = time.time()
 
-    use_llm_judge=False
+    if mock_run == 1:
+        use_llm_judge = False
+    else:
+        use_llm_judge = True
+        
     eval = Evaluation(mode, dataset_size, model_name, use_llm_judge)
     eval_summary = eval.evaluate(k, retrieved_output)
     

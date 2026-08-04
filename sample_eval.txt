@@ -1,0 +1,311 @@
+Qus :  What was Edward Drobyshevski's professional affiliation and field of work?
+Generated ans :  I don't know. The context does not mention Edward Drobyshevski. It discusses Robert Warburton Cox (a Canadian political science scholar) and a person named Drogin (a journalist), but makes no reference to Edward Drobyshevski.
+Ground truth ans :  Edward Drobyshevski was a Russian astrophysicist at the Ioffe Institute of the Russian Academy of Sciences in Saint Petersburg, Russia, known for his cosmogonical models and theories about the origin of small solar system bodies and his research on stellar magnetic fields.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.5409765243530273
+Retrieval Cost :  0.024018
+Retrieval Latency :  1.5466143608093261
+ Qus :  Why did the majority in the case find no need to create a section 1 limitation?
+Generated ans :  I don't know. The context does not contain information about a majority opinion creating or declining to create a section 1 limitation.
+Ground truth ans :  The majority ruled that police are allowed to interact with the public without engaging an investigative detention, so there was no need to create a section 1 limitation.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.6019721031188965
+Retrieval Cost :  0.024018
+Retrieval Latency :  1.5466143608093261
+ Qus :  Who was the leading wicket taker in the 1959–60 Australia vs Pakistan test series?
+Generated ans :  Richie Benaud was the leading wicket taker in the 1959–60 Australia vs Pakistan test series, with 18 wickets.
+Ground truth ans :  Richie Benaud was the leading wicket taker of the series with 18 wickets.
+Matrices : recall, MRR, precision_at_k, sas_score :  1 1.0 0.6 0.8261656761169434
+Retrieval Cost :  0.024018
+Retrieval Latency :  1.5466143608093261
+ Qus :  How did Brady learn that his daughter Rachel and Sarah were in Paris?
+Generated ans :  Brady learned that Rachel and Sarah were in Paris through Kristen, who received a phone call from Rex and, with the help of her nephew and Lani's brother Theo Carver, tracked Rex's phone to discover their location.
+Ground truth ans :  Kristen, with the help of her nephew and Lani's brother Theo Carver, tracked Rex's phone to discover that Rachel and Sarah were in Paris.
+Matrices : recall, MRR, precision_at_k, sas_score :  1 1.0 1.0 0.9120751023292542
+Retrieval Cost :  0.024018
+Retrieval Latency :  1.5466143608093261
+ Qus :  In Jespersen's Cycle, what happens to the original preverbal negation element in stage III?
+Generated ans :  In Stage III of Jespersen's Cycle, the original preverbal negation element becomes optional or is lost altogether.
+Ground truth ans :  In stage III, the original preverbal element becomes optional or is lost altogether.
+Matrices : recall, MRR, precision_at_k, sas_score :  1 1.0 0.6 0.6942489743232727
+Retrieval Cost :  0.024018
+Retrieval Latency :  1.5466143608093261
+ Qus :  Why was the Mount Baker National Recreation Area established in 1984?
+Generated ans :  The Mount Baker National Recreation Area was established in 1984 primarily to accommodate the use of snowmobiles during the winter months on the southern slopes of Mount Baker.
+Ground truth ans :  It was established primarily to accommodate the use of snowmobiles during the winter months on the southern slopes of Mount Baker.
+Matrices : recall, MRR, precision_at_k, sas_score :  1 1.0 0.2 0.8570364713668823
+Retrieval Cost :  0.020256
+Retrieval Latency :  1.3140324115753175
+ Qus :  What does Article 35(8) of the Constitution of Singapore empower the Attorney-General to do?
+Generated ans :  Article 35(8) of the Constitution of Singapore empowers the Attorney-General to institute, conduct, or discontinue any criminal proceedings.
+Ground truth ans :  It empowers the Attorney-General to institute, conduct, or discontinue any criminal proceedings.
+Matrices : recall, MRR, precision_at_k, sas_score :  1 1.0 1.0 0.7086584568023682
+Retrieval Cost :  0.020256
+Retrieval Latency :  1.3140324115753175
+ Qus :  How much money was raised at the 7th annual Pardcast-A-Thon in 2016?
+Generated ans :  The 7th annual Pardcast-A-Thon in 2016 raised over $169,000.
+Ground truth ans :  The event raised over $169,000.
+Matrices : recall, MRR, precision_at_k, sas_score :  1 1.0 0.6 0.5781593918800354
+Retrieval Cost :  0.020256
+Retrieval Latency :  1.3140324115753175
+ Qus :  What aircraft did the unit operate starting in 1993?
+Generated ans :  I don't know. The context does not list any aircraft operated starting specifically in 1993.
+Ground truth ans :  The unit operated the KC-135R Stratotanker starting in 1993.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.41337889432907104
+Retrieval Cost :  0.020256
+Retrieval Latency :  1.3140324115753175
+ Qus :  Who did Count Dooku take as his padawan apprentice when he was a Jedi Knight?
+Generated ans :  Count Dooku took Qui-Gon Jinn as his padawan apprentice when he was a Jedi Knight.
+Ground truth ans :  Dooku took Qui-Gon Jinn as his padawan apprentice.
+Matrices : recall, MRR, precision_at_k, sas_score :  1 1.0 1.0 0.9004981517791748
+Retrieval Cost :  0.020256
+Retrieval Latency :  1.3140324115753175
+ Qus :  What radio format does KKGK air, and what network does it mostly carry?
+Generated ans :  I don't know. The context does not mention a radio station called KKGK or its format and network.
+Ground truth ans :  KKGK airs a sports radio format, mostly carrying the Fox Sports Radio network.
+Matrices : recall, MRR, precision_at_k, sas_score :  1 0.3333333333333333 0.2 0.7783926725387573
+Retrieval Cost :  0.022515
+Retrieval Latency :  1.300749921798706
+ Qus :  Who was Curt Swan's favorite inker, despite only working together for a short time?
+Generated ans :  Curt Swan's favorite inker was Al Williamson, with whom he only worked for a short time, from 1985 to 1986.
+Ground truth ans :  Swan's favorite inker was Al Williamson, with whom he only worked from 1985 to 1986.
+Matrices : recall, MRR, precision_at_k, sas_score :  1 1.0 0.8 0.9212511777877808
+Retrieval Cost :  0.022515
+Retrieval Latency :  1.300749921798706
+ Qus :  What WHA teams did Richard Sarrazin play for?
+Generated ans :  Richard Sarrazin played for the New England Whalers and the Chicago Cougars in the WHA.
+Ground truth ans :  He played for the New England Whalers and the Chicago Cougars in the World Hockey Association.
+Matrices : recall, MRR, precision_at_k, sas_score :  1 1.0 0.2 0.6966841220855713
+Retrieval Cost :  0.022515
+Retrieval Latency :  1.300749921798706
+ Qus :  For whom was the Heywood Baronetcy created, and when?
+Generated ans :  The Heywood Baronetcy was created for the banker, politician, and philanthropist Benjamin Heywood on 9 August 1838.
+Ground truth ans :  It was created on 9 August 1838 for the banker, politician, and philanthropist Benjamin Heywood.
+Matrices : recall, MRR, precision_at_k, sas_score :  1 1.0 0.6 0.8667135238647461
+Retrieval Cost :  0.022515
+Retrieval Latency :  1.300749921798706
+ Qus :  When did the first span of the Capt. John F. Rowe Bridge open, and what traffic did it originally carry?
+Generated ans :  The first span of the Capt. John F. Rowe Bridge opened in 1966 and originally carried northbound traffic.
+Ground truth ans :  The first span opened in 1966 and originally carried northbound traffic.
+Matrices : recall, MRR, precision_at_k, sas_score :  1 1.0 0.6 0.5930017232894897
+Retrieval Cost :  0.022515
+Retrieval Latency :  1.300749921798706
+ Qus :  How large is the Wari complex near Ayacucho, and how many people is it thought to have housed?
+Generated ans :  The Wari complex near Ayacucho covers 988 acres and is thought to have housed up to 40,000 people.
+Ground truth ans :  The Wari complex covers 988 acres and is thought to have housed up to 40,000 people.
+Matrices : recall, MRR, precision_at_k, sas_score :  1 1.0 0.2 0.8897673487663269
+Retrieval Cost :  0.019908
+Retrieval Latency :  1.6101708889007569
+ Qus :  What percentage of DESY's annual budget is provided by the German Federal Ministry of Education and Research?
+Generated ans :  90% of DESY's annual budget is provided by the German Federal Ministry of Education and Research.
+Ground truth ans :  90% of the annual budget is provided by the German Federal Ministry of Education and Research.
+Matrices : recall, MRR, precision_at_k, sas_score :  1 1.0 0.6 0.8207388520240784
+Retrieval Cost :  0.019908
+Retrieval Latency :  1.6101708889007569
+ Qus :  What was Oak Park's reported violent crime rate per 100,000 residents in 2019, and how did it compare to Illinois as a whole?
+Generated ans :  Oak Park's reported violent crime rate per 100,000 residents in 2019 was 298, which was 28% lower than that of Illinois as a whole.
+Ground truth ans :  Oak Park's reported violent crime rate was 298 per 100,000 residents in 2019, which was 28% lower than that of Illinois as a whole.
+Matrices : recall, MRR, precision_at_k, sas_score :  1 1.0 1.0 0.997025728225708
+Retrieval Cost :  0.019908
+Retrieval Latency :  1.6101708889007569
+ Qus :  What does GTF stand for in the context of turbofan engines?
+Generated ans :  In the context of turbofan engines, GTF stands for Geared Turbofan (specifically referencing the Pratt & Whitney GTF).
+Ground truth ans :  GTF stands for Geared Turbofan, referring to the Pratt & Whitney GTF turbofan engine.
+Matrices : recall, MRR, precision_at_k, sas_score :  1 1.0 0.2 0.984443724155426
+Retrieval Cost :  0.019908
+Retrieval Latency :  1.6101708889007569
+ Qus :  What is the current focus of the organization described in the passage?
+Generated ans :  I don't know. The passage does not clearly identify a single organization with a defined current focus; it describes multiple contexts, including the Watch Tower Society's 1933 declaration in Germany and discussions about Reform Judaism, without specifying a current organizational focus.
+Ground truth ans :  The organization's current focus is on water-based lifesaving activities and general medical facilities, including giving awards for rescues and funding other organizations engaged in lifesaving activities.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.2614104747772217
+Retrieval Cost :  0.019908
+Retrieval Latency :  1.6101708889007569
+ Qus :  What were the birth and death years of Nancy McIntosh?
+Generated ans :  Nancy McIntosh was born in 1866 and died in 1954.
+Ground truth ans :  Nancy McIntosh was born in 1866 and died in 1954.
+Matrices : recall, MRR, precision_at_k, sas_score :  1 0.3333333333333333 0.4 0.9999999403953552
+Retrieval Cost :  0.022161000000000004
+Retrieval Latency :  1.0585764408111573
+ Qus :  What survey program discovered asteroid 182966 and from which location?
+Generated ans :  Asteroid 182966 (2002 TD66) was discovered by the LINEAR project at Lincoln Laboratory's ETS in Socorro, New Mexico.
+Ground truth ans :  Asteroid 182966 was discovered by NEAT from Haleakala on May 29, 2002.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.6826801300048828
+Retrieval Cost :  0.022161000000000004
+Retrieval Latency :  1.0585764408111573
+ Qus :  When did Arlind Rustemi move to Rabat Ajax, and what happened on his debut?
+Generated ans :  Arlind Rustemi moved to Rabat Ajax in October 2011, and he scored on his debut.
+Ground truth ans :  He moved to Rabat Ajax in October 2011 and scored on his debut.
+Matrices : recall, MRR, precision_at_k, sas_score :  1 1.0 0.2 0.8159370422363281
+Retrieval Cost :  0.022161000000000004
+Retrieval Latency :  1.0585764408111573
+ Qus :  Who served as EUCLID's Secretary-General from 2008 to 2020?
+Generated ans :  Syed Zahid Ali served as EUCLID's Secretary-General from 2008 to 2020.
+Ground truth ans :  Syed Zahid Ali served as Secretary-General from 2008 to 2020.
+Matrices : recall, MRR, precision_at_k, sas_score :  1 1.0 0.6 0.875072717666626
+Retrieval Cost :  0.022161000000000004
+Retrieval Latency :  1.0585764408111573
+ Qus :  What volatile components primarily drive cometary activity inside Jupiter's orbit?
+Generated ans :  Cometary activity inside Jupiter's orbit is driven by the sublimation of water ice.
+Ground truth ans :  Inside Jupiter's orbit, cometary activity is driven by the sublimation of water ice.
+Matrices : recall, MRR, precision_at_k, sas_score :  1 1.0 0.4 0.9943852424621582
+Retrieval Cost :  0.022161000000000004
+Retrieval Latency :  1.0585764408111573
+ Qus :  What chart position did the single reach in the UK, and when did it peak?
+Generated ans :  The single peaked at number eight in the UK, and based on the context, no specific peak date is mentioned — only that it made the top 10.
+Ground truth ans :  The single peaked at number 9 on 4 November 1978.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.6664059162139893
+Retrieval Cost :  0.022524000000000002
+Retrieval Latency :  1.569184160232544
+ Qus :  In which countries is Eucratoscelus constrictus found?
+Generated ans :  Eucratoscelus constrictus is found in Kenya and Tanzania.
+Ground truth ans :  Eucratoscelus constrictus is found in Kenya and Tanzania.
+Matrices : recall, MRR, precision_at_k, sas_score :  1 1.0 0.2 1.0000001192092896
+Retrieval Cost :  0.022524000000000002
+Retrieval Latency :  1.569184160232544
+ Qus :  Who compiled a list of Chinese Christian hymn books in 1911, and how many items did he list?
+Generated ans :  Rev. Donald MacGillivray, D.D., a Protestant Christian missionary in Shanghai with the Canadian Presbyterian Mission, compiled the list in 1911. He listed 62 items.
+Ground truth ans :  Rev. Donald Macgillivray compiled the list in 1911, listing 62 items.
+Matrices : recall, MRR, precision_at_k, sas_score :  1 1.0 1.0 0.7854891419410706
+Retrieval Cost :  0.022524000000000002
+Retrieval Latency :  1.569184160232544
+ Qus :  When did the Dragon School move to Crick Road, and what was it previously called?
+Generated ans :  The Dragon School moved to 17 Crick Road in 1879, and it was previously called the Oxford Preparatory School.
+Ground truth ans :  The Dragon School moved to 17 Crick Road in 1879, and was previously known as the Oxford Preparatory School.
+Matrices : recall, MRR, precision_at_k, sas_score :  1 1.0 0.4 0.9952569603919983
+Retrieval Cost :  0.022524000000000002
+Retrieval Latency :  1.569184160232544
+ Qus :  What role does the USD(R&E) serve in relation to the Department of Defense's technology strategy?
+Generated ans :  The USD(R&E) serves as the chief technology officer (CTO) for the Department of Defense, charged with the development and oversight of DoD technology strategy in concert with the department's current and future requirements. It is also the principal staff advisor for research and engineering matters to the Secretary and Deputy Secretary of Defense.
+Ground truth ans :  The USD(R&E) serves as the chief technology officer (CTO) for the Department of Defense, charged with the development and oversight of DoD technology strategy in concert with the department's current and future requirements.
+Matrices : recall, MRR, precision_at_k, sas_score :  1 1.0 1.0 0.9896996021270752
+Retrieval Cost :  0.022524000000000002
+Retrieval Latency :  1.569184160232544
+ Qus :  Where was Abraham "Whitey" Friedman gunned down, and what was he suspected of before his murder?
+Generated ans :  Abraham "Whitey" Friedman was gunned down near his home on East 96th Street in Brooklyn. Before his murder, he was suspected of informing on Louis "Lepke" Buchalter.
+Ground truth ans :  He was gunned down near his home on East 96th Street in Brooklyn, and before his murder he was suspected of informing on Buchalter.
+Matrices : recall, MRR, precision_at_k, sas_score :  1 1.0 0.2 0.701309323310852
+Retrieval Cost :  0.019757999999999998
+Retrieval Latency :  1.142442560195923
+ Qus :  What air force jurisdiction were the USAF forces stationed at Pleiku Air Base under?
+Generated ans :  The USAF forces stationed at Pleiku Air Base were under the jurisdiction of the Seventh Air Force, United States Pacific Air Forces (PACAF).
+Ground truth ans :  The USAF forces stationed at Pleiku were under the jurisdiction of the Seventh Air Force, United States Pacific Air Forces (PACAF).
+Matrices : recall, MRR, precision_at_k, sas_score :  1 1.0 1.0 0.9851357340812683
+Retrieval Cost :  0.019757999999999998
+Retrieval Latency :  1.142442560195923
+ Qus :  Where was the subject of this passage buried after his death in 1885?
+Generated ans :  I don't know.
+Ground truth ans :  He was buried in Mountain View Cemetery in Oakland, California.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.044537171721458435
+Retrieval Cost :  0.019757999999999998
+Retrieval Latency :  1.142442560195923
+ Qus :  Who donated Goodale Park to the city of Columbus, and in what year?
+Generated ans :  Goodale Park was donated to the city of Columbus by Dr. Lincoln Goodale on July 14, 1851.
+Ground truth ans :  The park was donated by Dr. Lincoln Goodale on July 14, 1851.
+Matrices : recall, MRR, precision_at_k, sas_score :  1 1.0 0.8 0.9097515344619751
+Retrieval Cost :  0.019757999999999998
+Retrieval Latency :  1.142442560195923
+ Qus :  How many primary schools are run by the government in the valley area described?
+Generated ans :  I don't know.
+Ground truth ans :  There are 78 primary schools run by the government in the valley area.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.0158882774412632
+Retrieval Cost :  0.019757999999999998
+Retrieval Latency :  1.142442560195923
+ Qus :  Who built the 100-foot stupa at Salugara Monastery?
+Generated ans :  The 100-foot stupa at Salugara Monastery was built by the Tibetan lama, Kalu Rinpoche.
+Ground truth ans :  The 100 ft stupa is believed to have been built by the Tibetan lama Kalu Rinpoche.
+Matrices : recall, MRR, precision_at_k, sas_score :  1 1.0 0.2 0.8628897070884705
+Retrieval Cost :  0.020295
+Retrieval Latency :  1.1389670848846436
+ Qus :  Who was Robert Morrison the missionary, and what is he known for?
+Generated ans :  I don't know. The context mentions a "William Morrison (missionary)" who was an American missionary based in the Congo Free State, but does not provide further details about him or what he is known for. There is no mention of a "Robert Morrison" missionary in the context.
+Ground truth ans :  Robert Morrison (1782–1834) was the first Protestant missionary to China, arriving in 1807.
+Matrices : recall, MRR, precision_at_k, sas_score :  1 1.0 0.2 0.700026273727417
+Retrieval Cost :  0.020295
+Retrieval Latency :  1.1389670848846436
+ Qus :  Since what year has the Institute of Leather Engineering and Technology been part of the University of Dhaka?
+Generated ans :  Since 2011, the Institute of Leather Engineering and Technology has been part of the University of Dhaka.
+Ground truth ans :  It has been an institute of Dhaka University since 2011.
+Matrices : recall, MRR, precision_at_k, sas_score :  1 1.0 0.2 0.7301173210144043
+Retrieval Cost :  0.020295
+Retrieval Latency :  1.1389670848846436
+ Qus :  Where is Mackenzie Presbyterian University located?
+Generated ans :  Mackenzie Presbyterian University is located in São Paulo, Brazil.
+Ground truth ans :  Mackenzie Presbyterian University is located in São Paulo, Brazil.
+Matrices : recall, MRR, precision_at_k, sas_score :  1 1.0 0.2 1.0
+Retrieval Cost :  0.020295
+Retrieval Latency :  1.1389670848846436
+ Qus :  What prize did Lucy Caldwell win on 25 October 2011?
+Generated ans :  I don't know.
+Ground truth ans :  Lucy Caldwell was awarded the Rooney Prize for Irish Literature.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.05477704107761383
+Retrieval Cost :  0.020295
+Retrieval Latency :  1.1389670848846436
+ Qus :  What type of soil is unsuitable for growing the plant described, and what soil conditions are preferable?
+Generated ans :  The context does not clearly identify a single plant being described throughout, as multiple plants are discussed. However, based on the context about Corchorus olitorius, waterlogged soil is unsuitable (especially for young plants), while the plant prefers fertile, humus-rich, well-drained alluvial soil with a pH of 4.5 to 8.2.
+Ground truth ans :  Acidic soil is unsuitable; moist, humus-rich, alkaline soil in dappled shade is preferable.
+Matrices : recall, MRR, precision_at_k, sas_score :  0 0 0.0 0.46571049094200134
+Retrieval Cost :  0.023616
+Retrieval Latency :  1.8980099201202392
+ Qus :  What is the title of the book Kamal Boullata wrote about Palestinian art?
+Generated ans :  The title of the book Kamal Boullata wrote about Palestinian art is "Palestinian Art: From 1850 to the Present."
+Ground truth ans :  The book is titled "Palestinian Art: From 1850 to the Present."
+Matrices : recall, MRR, precision_at_k, sas_score :  1 1.0 0.8 0.8211756944656372
+Retrieval Cost :  0.023616
+Retrieval Latency :  1.8980099201202392
+ Qus :  Who founded the National-Democratic Party (SDN) in 1897?
+Generated ans :  The National-Democratic Party (SDN) was founded by Roman Dmowski, Jan Ludwik Popławski, and Zygmunt Balicki.
+Ground truth ans :  The SDN was founded by Roman Dmowski, Jan Ludwik Popławski, and Zygmunt Balicki.
+Matrices : recall, MRR, precision_at_k, sas_score :  1 1.0 0.2 0.8636318445205688
+Retrieval Cost :  0.023616
+Retrieval Latency :  1.8980099201202392
+ Qus :  Until what year did Casa Figueres serve as a hospital, and why did it stop?
+Generated ans :  According to the context, Casa Figueres served medical purposes following Lluis Guilera Molas' death in 1969, when his son Lluis Guilera Soler used it. The context does not specify the exact year it stopped serving as a hospital or a clear reason why it stopped.
+Ground truth ans :  It served as a hospital until 1974, when the hospital relocated to a more accessible area better suited to medical needs.
+Matrices : recall, MRR, precision_at_k, sas_score :  1 0.3333333333333333 0.4 0.3334773778915405
+Retrieval Cost :  0.023616
+Retrieval Latency :  1.8980099201202392
+ Qus :  What was Fort Hindman designed to prevent, and where was it located?
+Generated ans :  Fort Hindman was designed to prevent Union forces from going upriver to Little Rock. It was located on a bluff 25 feet above the river on the north bank of the Mississippi River at Arkansas Post, with a mile view up and downriver.
+Ground truth ans :  Fort Hindman was located at Arkansas Post on the Mississippi River, on a bluff 25 feet above the river, and was designed to prevent Union forces from going upriver to Little Rock.
+Matrices : recall, MRR, precision_at_k, sas_score :  1 0.25 0.4 0.9741705656051636
+Retrieval Cost :  0.023616
+Retrieval Latency :  1.8980099201202392
+ Qus :  What congressional terms did George Lilley serve, and when did he leave Congress?
+Generated ans :  George Lilley was elected as a Republican to the Fifty-Eighth, Fifty-Ninth, and Sixtieth Congresses, holding office from March 4, 1903, to January 5, 1909. He left Congress when his seat was declared vacated on January 6, 1909, as he had entered upon the duties of the office of Governor of Connecticut the preceding day (January 5, 1909).
+Ground truth ans :  Lilley was elected to the 58th, 59th, and 60th Congresses, serving from March 4, 1903, to January 5, 1909.
+Matrices : recall, MRR, precision_at_k, sas_score :  1 1.0 0.2 0.7879608273506165
+Retrieval Cost :  0.026985
+Retrieval Latency :  2.1864357471466063
+ Qus :  To whom was Combley Manor granted in February 1537?
+Generated ans :  Combley Manor was granted in fee to Thomas Wriothesley in February 1537.
+Ground truth ans :  Combley Manor was granted in fee to Thomas Wriothesley in February 1537.
+Matrices : recall, MRR, precision_at_k, sas_score :  1 1.0 0.2 1.0000001192092896
+Retrieval Cost :  0.026985
+Retrieval Latency :  2.1864357471466063
+ Qus :  How did Pink Floyd's producer Norman Smith compare Syd Barrett to John Lennon?
+Generated ans :  Norman Smith compared Syd Barrett favorably to John Lennon, stating that Barrett "could write like John," though he noted Barrett "wasn't quite as good as John" — referencing Barrett at his top form with "See Emily Play" — but believed Barrett would have developed and "definitely" gotten even better in time.
+Ground truth ans :  Norman Smith said Barrett could write like John Lennon, though he wasn't quite as good, but believed he would have developed and gotten even better in time.
+Matrices : recall, MRR, precision_at_k, sas_score :  1 1.0 1.0 0.813589334487915
+Retrieval Cost :  0.026985
+Retrieval Latency :  2.1864357471466063
+ Qus :  What is the average snowiest month in East Stroudsburg, and how does it relate to temperature?
+Generated ans :  The average snowiest month in East Stroudsburg is January, which correlates with it also being the average coldest month of the year.
+Ground truth ans :  The average snowiest month is January, which correlates with the average coldest month of the year.
+Matrices : recall, MRR, precision_at_k, sas_score :  1 1.0 0.4 0.7395322322845459
+Retrieval Cost :  0.026985
+Retrieval Latency :  2.1864357471466063
+ Qus :  Why did Manfred Mann need a new bassist when Tom McGuinness joined?
+Generated ans :  Manfred Mann needed a new bassist because their previous bassist, Dave Richmond, refused to play simple bass lines that would fit the rhythm-and-blues direction the band was seeking. He was into jazz (such as Charles Mingus) and would play complex lines (like incredible 3/4 lines) rather than the simple bass lines needed for songs like Bo Diddley numbers.
+Ground truth ans :  The previous bassist was into jazz (Charles Mingus) and refused to play simple bass lines that would fit Bo Diddley numbers, playing complex lines instead, so McGuinness came in and played simply.
+Matrices : recall, MRR, precision_at_k, sas_score :  1 1.0 0.6 0.642641007900238
+Retrieval Cost :  0.026985
+Retrieval Latency :  2.1864357471466063
+total cost :  1.1101799999999993 , total latency :  73.82591748237608
+recall, avg ans faithfulness, avg ans releavncy, avg_ans_lmm_correctness :  0.8 0.965 0.922 0.7400000000000001
+
+Evaluation
+dense
+fixed
+
+Eval summary : 
+{'dataset_size': 50000, 'k': 5, 'num_questions': 50, 'recall': 0.8, 'precision': 0.4119999999999998, 'mrr': 0.745, 'sas': 0.7418769557029009, 'avg_faithfulness': 0.965, 'avg_relevancy': 0.922, 'avg_ans_lmm_correctness': 0.7400000000000001, 'total_cost': 1.3380869999999994, 'total_latency': 104.22282314300536}
+time :  34.426793336868286
+

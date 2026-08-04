@@ -12,11 +12,12 @@ app = FastAPI()
 def startup_event():
     # Read params
     mode = os.environ["mode"]
+    model_name = os.environ["model_name"]
     dataset_size = int(os.environ["dataset_size"])
     chunking_type = os.environ["chunking_type"]
     index_type = os.environ["index_type"]
 
-    state.load_state(mode, dataset_size, chunking_type, index_type)
+    state.load_state(mode, model_name, dataset_size, chunking_type, index_type)
 
 @app.get("/health")
 def health():

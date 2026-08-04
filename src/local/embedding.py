@@ -52,6 +52,9 @@ class Embedding:
             with open(out_path, "wb") as f:
                 pickle.dump(embedding_map, f)
             
+            embedding_size = os.path.getsize(out_path) / (1024**2)
+            print("Embedding size : ", embedding_size)
+
         except Exception as e:
             print(f"Embedding failed: {e}")
             # remove dir if fails

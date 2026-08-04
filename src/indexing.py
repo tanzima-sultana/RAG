@@ -175,6 +175,13 @@ class Indexing:
 
             self.save_ids(ids_path, chunk_ids)
 
+            # Size of the files
+            flatip_size = os.path.getsize(path1) / (1024**2)
+            ivf_size = os.path.getsize(path2) / (1024**2)
+            hnsw_size = os.path.getsize(path3) / (1024**2)
+
+            print("Index - File sizes : flatip, ivf, hnsw : ", flatip_size, ivf_size, hnsw_size)
+
         except Exception as e:
             print(f"Indexing failed: {e}")
             # remove dir if fails
@@ -236,6 +243,9 @@ class Indexing:
             # Save
             self.save_bm25(bm25_index, path)
             self.save_ids(ids_path, chunk_ids)
+
+            bm25_size = os.path.getsize(path) / (1024**2)
+            print("BM25 - File size : ", bm25_size)
         
         except Exception as e:
             print(f"Index generation failed: {e}")

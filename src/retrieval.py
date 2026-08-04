@@ -1,4 +1,4 @@
-from sentence_transformers import SentenceTransformer, CrossEncoder
+
 import numpy as np
 import time
 import faiss
@@ -19,7 +19,7 @@ from src.anthropic_api import AnthropicAPI
 
 
 class Retrieval:
-   def __init__(self, dry_run, mode, chunk_type, chunks_map, eval_set, k, reranking, rerank_k, model_name, device):
+   def __init__(self, dry_run, mode, chunk_type, chunks_map, eval_set, k, reranking, rerank_k, model, cross_encoder):
       self.dry_run = dry_run
       self.mode = mode 
       self.chunk_type = chunk_type
@@ -27,14 +27,11 @@ class Retrieval:
       self.k = k 
       self.reranking = reranking
       self.rerank_k = rerank_k
-      self.model_name = model_name
-      self.device = device
+      self.model = model
+      self.cross_encoder = cross_encoder
 
       # Load chunks
       self.chunks_map = chunks_map
-
-      self.model = SentenceTransformer(self.model_name, device=self.device)
-      self.cross_encoder = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2') 
    
    def RETRIEVED_OUTPUT(self, retrieval_type, chunk_id, retrieved_chunk_ids, retrieved_chunk_texts, qus, context, generated_ans, ground_truth_ans, k, cost, latency):
       return {

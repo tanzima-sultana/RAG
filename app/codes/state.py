@@ -3,6 +3,7 @@ import faiss
 import pickle
 import json 
 import sys 
+from sentence_transformers import SentenceTransformer, CrossEncoder
 
 from config import S3_BUCKET
 from constants import LOCAL, AWS, FIXED, SENTENCE, SEMANTIC, DENSE, BM25, HYBRID, INDEX_FLATIP, INDEX_IVF, INDEX_HNSW
@@ -13,9 +14,12 @@ FAISS_IDS = None
 BM25_INDEX = None
 BM25_IDS = None
 QDRANT_NAME = None 
+EVAL_SET = None
+MODEL = None
+CROSS_ENCODER = None
 
-def load_state(mode, dataset_size, chunking_type, index_type):
-    global CHUNKS_MAP, FAISS_INDEX, FAISS_IDS, BM25_INDEX, BM25_IDS, QDRANT_NAME
+def load_state(mode, model_name, dataset_size, chunking_type, index_type):
+    global CHUNKS_MAP, FAISS_INDEX, FAISS_IDS, BM25_INDEX, BM25_IDS, QDRANT_NAME, EVAL_SET, MODEL, CROSS_ENCODER
     
     manifest_path = f"manifests/{dataset_size}_manifest.json"
     if mode == AWS:
@@ -59,3 +63,12 @@ def load_state(mode, dataset_size, chunking_type, index_type):
     
     # 4. Qdrant name
     QDRANT_NAME = manifest[chunking_type]["vectordb"] 
+
+    # 5. Evaluation
+    with open(manifest[chunking_type]["eval_path"], "r") as f:
+        EVAL_SET = json.load(f)
+    
+    # 6. Model
+
+    MODEL = SentenceTransformer(model_name, device="cuda")
+    CROSS_ENCODER = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2') 

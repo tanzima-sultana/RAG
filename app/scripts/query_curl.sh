@@ -5,14 +5,14 @@ MOCK_RUN=1
 MODE="local" # local, aws
 DEVICE="cuda"
 MODEL_NAME="all-MiniLM-L6-v2"
-DATASET_SIZE=5000
+DATASET_SIZE=50000
 
 CHUNKING_TYPE="fixed" #"fixed", "sentence", "semantic"
 INDEX_TYPE="flatip" #"flatip", "ivf", "hnsw"
-RETRIEVAL_TYPE="dense" #"dense", "bm25", "hybrid", "vectordb"
-NUM_QUERIES=20
+RETRIEVAL_TYPE="hybrid" #"dense", "bm25", "hybrid", "vectordb"
+NUM_QUERIES=50
 K=5
-RE_RANKING=0 # 0 = no rerank, 1 = rerank
+RE_RANKING=1 # 0 = no rerank, 1 = rerank
 RERANK_K=20
 
 BASE_URL="http://127.0.0.1:8001"

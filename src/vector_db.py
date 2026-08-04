@@ -41,6 +41,10 @@ class VectorDB:
         name = f"{self.db_name}_{name_etxn}"
 
         try:
+            if self.client.collection_exists(collection_name=name):
+                print(f"VectorDB collection {name} already exists, skipping creation.")
+                return name
+        
             # Load embedding_map
             embeddings_map = None
             with open(embedding_path, "rb") as f:

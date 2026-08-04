@@ -1,0 +1,32 @@
+{
+  "fixed": {
+    "chunk_path": "chunks/100_fixed/size_256_overlap_32.pkl",
+    "flatip": "index/flatip/100_fixed/size_256_overlap_32",
+    "ivf": "index/ivf/100_fixed/size_256_overlap_32",
+    "hnsw": "index/hnsw/100_fixed/size_256_overlap_32",
+    "chunk_ids": "index/faiss_ids/100_fixed/size_256_overlap_32",
+    "bm25": "index/bm25/100_fixed/size_256_overlap_32",
+    "bm25_ids": "index/bm25_ids/100_fixed/size_256_overlap_32",
+    "vectordb": "vectordb_100_fixed_size_256_overlap_32"
+  },
+  "sentence": {
+    "chunk_path": "chunks/100_sentence/size_256_overlap_32.pkl",
+    "flatip": "index/flatip/100_sentence/size_256_overlap_32",
+    "ivf": "index/ivf/100_sentence/size_256_overlap_32",
+    "hnsw": "index/hnsw/100_sentence/size_256_overlap_32",
+    "chunk_ids": "index/faiss_ids/100_sentence/size_256_overlap_32",
+    "bm25": "index/bm25/100_sentence/size_256_overlap_32",
+    "bm25_ids": "index/bm25_ids/100_sentence/size_256_overlap_32",
+    "vectordb": "vectordb_100_sentence_size_256_overlap_32"
+  },
+  "semantic": {
+    "chunk_path": "chunks/100_semantic/size_256_overlap_32_threashold_0.3.pkl",
+    "flatip": "index/flatip/100_semantic/size_256_overlap_32_threashold_0.3",
+    "ivf": "index/ivf/100_semantic/size_256_overlap_32_threashold_0.3",
+    "hnsw": "index/hnsw/100_semantic/size_256_overlap_32_threashold_0.3",
+    "chunk_ids": "index/faiss_ids/100_semantic/size_256_overlap_32_threashold_0.3",
+    "bm25": "index/bm25/100_semantic/size_256_overlap_32_threashold_0.3",
+    "bm25_ids": "index/bm25_ids/100_semantic/size_256_overlap_32_threashold_0.3",
+    "vectordb": "vectordb_100_semantic_size_256_overlap_32_threashold_0.3"
+  }
+}

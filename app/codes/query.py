@@ -1,12 +1,12 @@
 
 from fastapi import APIRouter
+import random
 
 from . import state
 from .schemas import QueryRequest, QueryResponse
 
 from constants import DENSE, BM25, HYBRID
 from src.retrieval import Retrieval
-from src.eval_qa import EvalQA
 from src.evaluation import Evaluation
 
 router = APIRouter()
@@ -35,13 +35,15 @@ def query(request: QueryRequest):
     bm25_index = state.BM25_INDEX
     bm25_ids = state.BM25_IDS
     qdrant_name = state.QDRANT_NAME
+    eval_set = state.EVAL_SET
+    model = state.MODEL
+    cross_encoder = state.CROSS_ENCODER
 
     # ----------- 1. Evaluation Qus-Ans Set
-    ev = EvalQA(mock_run, mode, dataset_size, num_queries)
-    eval_set = ev.build_eval_set(chunking_type, chunks_map, min_chunk_size=100)
+    eval_set = random.sample(state.EVAL_SET, num_queries)
 
     # ----------- 2. Retrival
-    ret1 = Retrieval(mock_run, mode, chunking_type, chunks_map, eval_set, k, re_ranking, rerank_k, model_name, device)
+    ret1 = Retrieval(mock_run, mode, chunking_type, chunks_map, eval_set, k, re_ranking, rerank_k, model, cross_encoder)
     retrieved_output = None
 
     if retrieval_type == DENSE:
@@ -55,9 +57,4 @@ def query(request: QueryRequest):
         collection_name = qdrant_name
         retrieved_output = ret1.retrieval_qdrant(collection_name)
 
-    # ----------- 3. Evaluation 
-    use_llm_judge=False
-    eval = Evaluation(mode, dataset_size, model_name, use_llm_judge)
-    eval_summary = eval.evaluate(k, retrieved_output)
-
-    return QueryResponse(**eval_summary)
+    return QueryResponse(results=retrieved_output)

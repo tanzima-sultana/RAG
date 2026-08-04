@@ -1,27 +1,10 @@
-GPU Acceleration — Local Pipeline Findings (1K docs)
+# RAG-Eval Pipeline
 
-Across the local RAG pipeline (chunking → embedding → indexing → retrieval), Embedding benefits most from GPU acceleration. Semantic chunking is a close second. All other stages show no meaningful GPU benefit.
+A retrieval-augmented generation (RAG) pipeline for benchmarking retrieval and answer quality. It compares three chunking strategies (fixed-size, sentence-aware, and semantic), three FAISS index types (FlatIP, IVF, HNSW), and three retrieval modes (dense, sparse, and hybrid). An optional cross-encoder reranking stage can also be applied before generation. Every configuration is scored on a fixed ground-truth set using both retrieval metrics (recall, precision, MRR (mean reciprocal rank), SAS (semantic answer similarity)) and RAGAS answer-quality metrics (faithfulness, relevancy, correctness). The full pipeline is also served through a FastAPI endpoint and load-tested under concurrent requests.
 
-Stage	GPU benefit	Reason
-Chunking (fixed/sentence)	None (~1x)	Pure tokenizer work. No model forward pass.
-Chunking (semantic)	~7.4x	Embeds every sentence for similarity comparison.
-Embedding	~7–7.2x	Full transformer forward pass per chunk.
-Indexing	N/A (CPU-only)	FAISS index build is not GPU-accelerated in this pipeline.
+**Key Results:**
 
-Chunking time, 1K docs, by chunking strategy
-
-Chunking type	CPU	CUDA	Speedup
-Fixed	6.0s	6.67s	~1x
-Sentence	6.08s	6.1s	~1x
-Semantic	156s	21s	~7.4x
-
-Embedding time, 1K docs, by chunking strategy
-
-Chunking type	CPU	CUDA	Speedup
-Fixed	64.14s	8.95s	~7.2x
-Sentence	61.8s	8.82s	~7.0x
-Semantic	68.05s	9.54s	~7.1x
-
-Takeaway
-
-Fixed and sentence-aware chunking involve no model forward pass. GPU offers no benefit for these. Semantic chunking embeds every sentence to compute similarity. This gives it a ~7.4x GPU speedup, comparable to the embedding stage itself. Embedding time is consistently ~7x faster on GPU across all chunking strategies. GPU benefit scales with chunk or sentence count, not chunking method. Embedding is the highest-leverage target for GPU acceleration in this pipeline. If semantic chunking is used, chunking becomes a second priority. At larger scale (Week 5's 50K+ chunks), these stages are expected to dominate CPU wall-clock time. GPU allocation is therefore a priority infrastructure decision in the local-to-distributed pipeline.
+- Across datasets (5K, 20K, 50K) retrieval reached up to **0.94 recall@5** with precision between 0.40 and 0.58, both strongest under semantic chunking and hybrid retrieval.
+- Faithfulness stayed at **0.98 on average** (never below 0.96) and relevancy at 0.93, while correctness averaged **0.82** — answers stayed grounded and on-topic even where they were not fully correct.
+- Semantic chunking retrieved **~15% higher recall** than fixed-size and sentence-aware, but at roughly a third of their average chunk size (70 vs ~210 characters), which favors recall@5.
+- HNSW came within **2% of the FlatIP exact-search baseline** (0.92 vs 0.94 recall@5), while IVF at default `nprobe` trailed by ~11% and was the slowest of the three.

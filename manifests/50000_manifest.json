@@ -1,0 +1,35 @@
+{
+  "fixed": {
+    "chunk_path": "chunks/50000_fixed/size_256_overlap_32.pkl",
+    "flatip": "index/flatip/50000_fixed/size_256_overlap_32",
+    "ivf": "index/ivf/50000_fixed/size_256_overlap_32",
+    "hnsw": "index/hnsw/50000_fixed/size_256_overlap_32",
+    "chunk_ids": "index/faiss_ids/50000_fixed/size_256_overlap_32",
+    "bm25": "index/bm25/50000_fixed/size_256_overlap_32",
+    "bm25_ids": "index/bm25_ids/50000_fixed/size_256_overlap_32",
+    "vectordb": "vectordb_50000_fixed_size_256_overlap_32",
+    "eval_path": "eval_qa/50000_5_fixed_mock"
+  },
+  "sentence": {
+    "chunk_path": "chunks/50000_sentence/size_256_overlap_32.pkl",
+    "flatip": "index/flatip/50000_sentence/size_256_overlap_32",
+    "ivf": "index/ivf/50000_sentence/size_256_overlap_32",
+    "hnsw": "index/hnsw/50000_sentence/size_256_overlap_32",
+    "chunk_ids": "index/faiss_ids/50000_sentence/size_256_overlap_32",
+    "bm25": "index/bm25/50000_sentence/size_256_overlap_32",
+    "bm25_ids": "index/bm25_ids/50000_sentence/size_256_overlap_32",
+    "vectordb": "vectordb_50000_sentence_size_256_overlap_32",
+    "eval_path": "eval_qa/50000_5_sentence_mock"
+  },
+  "semantic": {
+    "chunk_path": "chunks/50000_semantic/size_256_overlap_32_threashold_0.3.pkl",
+    "flatip": "index/flatip/50000_semantic/size_256_overlap_32_threashold_0.3",
+    "ivf": "index/ivf/50000_semantic/size_256_overlap_32_threashold_0.3",
+    "hnsw": "index/hnsw/50000_semantic/size_256_overlap_32_threashold_0.3",
+    "chunk_ids": "index/faiss_ids/50000_semantic/size_256_overlap_32_threashold_0.3",
+    "bm25": "index/bm25/50000_semantic/size_256_overlap_32_threashold_0.3",
+    "bm25_ids": "index/bm25_ids/50000_semantic/size_256_overlap_32_threashold_0.3",
+    "vectordb": "vectordb_50000_semantic_size_256_overlap_32_threashold_0.3",
+    "eval_path": "eval_qa/50000_5_semantic_mock"
+  }
+}

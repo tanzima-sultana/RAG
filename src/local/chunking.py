@@ -35,18 +35,14 @@ class Chunking:
             'chunking_type': chunking_type
         }
 
-    def _is_exists(self):
-        return os.path.exists(self.fixed_path) and os.path.exists(self.sentence_path) and os.path.exists(self.semantic_path)
+    def _is_exists(self, path):
+        return os.path.exists(path)
             
-    def load(self):
-        with open(self.fixed_path, "rb") as f:
-            fixed_chunks = pickle.load(f)
-        with open(self.sentence_path, "rb") as f:
-            sentence_chunks = pickle.load(f)
-        with open(self.semantic_path, "rb") as f:
-            semantic_chunks = pickle.load(f)
+    def load(self, path):
+        with open(path, "rb") as f:
+            chunks = pickle.load(f)
         
-        return fixed_chunks, sentence_chunks, semantic_chunks
+        return chunks
 
     def save(self, chunks, out_path):
         os.makedirs(os.path.dirname(out_path), exist_ok=True)
@@ -264,17 +260,17 @@ class Chunking:
     # -----------------------
     def compute_chunks(self, max_chunk_size, fix_chunk_overlap, semantic_threshold):
 
-        self.fixed_path = self.fixed_path + f"size_{max_chunk_size}_overlap_{fix_chunk_overlap}.pkl"
-        self.sentence_path = self.sentence_path + f"size_{max_chunk_size}_overlap_{fix_chunk_overlap}.pkl"
-        self.semantic_path = self.semantic_path + f"size_{max_chunk_size}_overlap_{fix_chunk_overlap}_threashold_{semantic_threshold}.pkl"
+        path1 = self.fixed_path + f"size_{max_chunk_size}_overlap_{fix_chunk_overlap}.pkl"
+        path2 = self.sentence_path + f"size_{max_chunk_size}_overlap_{fix_chunk_overlap}.pkl"
+        path3 = self.semantic_path + f"size_{max_chunk_size}_overlap_{fix_chunk_overlap}_threashold_{semantic_threshold}.pkl"
 
         #print("Compute chunks start")
         
         # If alraedy exists, return that
-        if self._is_exists():
+        if self._is_exists(path1) and self._is_exists(path2) and self._is_exists(path3):
             print("Read chunks from disk")
             #return self.load()
-            return self.fixed_path, self.sentence_path, self.semantic_path
+            return path1, path2, path3
         
         try:
             fixed_chunks = {}
@@ -311,23 +307,29 @@ class Chunking:
                 time3 += t3
             
             # Save
-            self.save(fixed_chunks, self.fixed_path)
-            self.save(sentence_chunks, self.sentence_path)
-            self.save(semantic_chunks, self.semantic_path)
+            self.save(fixed_chunks, path1)
+            self.save(sentence_chunks, path2)
+            self.save(semantic_chunks, path3)
+
+            # Size of the files
+            fixed_size = os.path.getsize(path1) / (1024**2)
+            sentence_size = os.path.getsize(path2) / (1024**2)
+            semantic_size = os.path.getsize(path3) / (1024**2)
 
             print("Avg chunk sizes : fixed, sentence, semantic : ", np.mean(fixed_chunks_sizes), np.mean(sentence_chunk_sizes), np.mean(semantic_chunk_sizes))
             print("Total time for chunks : fixed, sentence, semantic : ", time1, time2, time3)
+            print("File sizes : fixed, sentence, semantic : ", fixed_size, sentence_size, semantic_size)
 
-            return self.fixed_path, self.sentence_path, self.semantic_path
+            return path1, path2, path3
 
         except Exception as e:
             print(f"Chunking failed: {e}")
             # remove dir if fails
-            if os.path.exists(self.fixed_path):
-                shutil.rmtree(self.fixed_path)
-            if os.path.exists(self.sentence_path):
-                shutil.rmtree(self.sentence_path)
-            if os.path.exists(self.semantic_path):
-                shutil.rmtree(self.semantic_path)
+            if os.path.exists(path1):
+                shutil.rmtree(path1)
+            if os.path.exists(path2):
+                shutil.rmtree(path2)
+            if os.path.exists(path3):
+                shutil.rmtree(path3)
 
             return None, None, None

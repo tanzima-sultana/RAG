@@ -16,16 +16,19 @@ class QueryRequest(BaseModel):
     re_ranking: int = 0
     rerank_k: int = 10
 
-class QueryResponse(BaseModel):
-    dataset_size: int
+class QueryResult(BaseModel):
+    retrieval_type: str
+    chunk_type: str
+    chunk_id: str
+    retrieved_chunk_ids: list
+    retrieved_chunk_texts: list
+    qus: str
+    context: str
+    generated_ans: str
+    ground_truth_ans: str
     k: int
-    num_questions: int
-    recall: float
-    precision: float
-    mrr: float
-    sas: float
-    avg_faithfulness: float
-    avg_relevancy: float
-    avg_ans_lmm_correctness: float
-    total_cost: float
-    total_latency: float
+    cost: float
+    latency: float
+
+class QueryResponse(BaseModel):
+    results: list[QueryResult]

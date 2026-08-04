@@ -15,6 +15,7 @@ from src.local.embedding import Embedding
 
 from src.indexing import Indexing
 from src.vector_db import VectorDB
+from src.eval_qa import EvalQA
 
 
 
@@ -41,6 +42,10 @@ def parse_args():
                          help="Number of IVF nlist")
     parser.add_argument("--hnsw_m", type=int, default=32,
                          help="Number of HNSW M")
+    parser.add_argument("--mock_run", type=int, default=1,
+                         help="mock run 0 or 1")
+    parser.add_argument("--num_queries", type=int, default=5,
+                         help="Num of eval questions")
 
     return parser.parse_args()
 
@@ -64,6 +69,8 @@ if __name__ == "__main__":
     semantic_threshold = args.semantic_threshold
     ivf_nlist = args.ivf_nlist
     hnsw_m = args.hnsw_m
+    mock_run = args.mock_run
+    num_queries = args.num_queries
 
     if not torch.cuda.is_available():
         device = CPU
@@ -138,6 +145,9 @@ if __name__ == "__main__":
     print("time : ", t5)
 
     # 3. Vector DB (qdarnt)
+    print("\n----- Vector DB (qdarnt)------------\n")
+    s6 = time.time()
+
     db_name = "vectordb"
     vdb = VectorDB(db_name)
 
@@ -151,6 +161,26 @@ if __name__ == "__main__":
         print("VectorDB failed, exiting")
         sys.exit(1)
 
+    t6 = time.time() - s6
+    print("time : ", t6)
+
+    # ----------- 6. Evaluation Qus-Ans Set
+    print("\n----- Evaluation Qus-Ans Set------------\n")
+    s7 = time.time()
+
+    ev = EvalQA(mock_run, mode, dataset_size, num_queries)
+    eval_path1 = ev.build_eval_set(FIXED, fixed_chunks_path, min_chunk_size=100)
+    eval_path2 = ev.build_eval_set(SENTENCE, sentence_chunks_path, min_chunk_size=100)
+    eval_path3 = ev.build_eval_set(SEMANTIC, semantic_chunks_path, min_chunk_size=100)
+
+    if not eval_path1 or not eval_path2 or not eval_path3:
+        print("Evaluation set building failed, exiting")
+        sys.exit(1)
+
+    t7 = time.time() - s7
+    print("time : ", t7)
+
+    # -------------------------
     t1 = time.time() - s1
     print("\nTotal time : ", t1)
 
@@ -161,24 +191,31 @@ if __name__ == "__main__":
             "chunk_path" : fixed_chunks_path,
             "flatip": flatip_path1, "ivf": ivf_path1, "hnsw": hnsw_path1, "chunk_ids": chunk_ids_path1, 
             "bm25": bm25_path1, "bm25_ids": bm25_ids_path1,
-            "vectordb": vectordb_fixed,
+            "vectordb": vectordb_fixed, 
+            "eval_path": eval_path1,
         },
         "sentence": {
             "chunk_path" : sentence_chunks_path,
             "flatip": flatip_path2, "ivf": ivf_path2, "hnsw": hnsw_path2, "chunk_ids": chunk_ids_path2, 
             "bm25": bm25_path2, "bm25_ids": bm25_ids_path2,
             "vectordb": vectordb_sentence,
+            "eval_path": eval_path2,
         },
         "semantic": {
             "chunk_path" : semantic_chunks_path,
             "flatip": flatip_path3, "ivf": ivf_path3, "hnsw": hnsw_path3, "chunk_ids": chunk_ids_path3, 
             "bm25": bm25_path3, "bm25_ids": bm25_ids_path3,
             "vectordb": vectordb_semantic,
+            "eval_path": eval_path3,
         },
     }
 
-    os.makedirs("manifests", exist_ok=True)
+    
     manifest_path = f"manifests/{dataset_size}_manifest.json"
+    if os.path.exists(manifest_path):
+        os.remove(manifest_path)
+    
+    os.makedirs(os.path.dirname(manifest_path), exist_ok=True)
     with open(manifest_path, "w") as f:
         json.dump(manifest, f, indent=2)
 
