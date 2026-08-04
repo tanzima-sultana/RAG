@@ -119,19 +119,19 @@ The same path backs two entry points: one single evaluation for each run, which 
 
 ### Chunking
 
-Semantic chunking led on recall (0.92) and precision (0.53), but at roughly a third of the chunk size of the other two strategies, which favors recall@5 and makes the gain misleading. Fixed and sentence-aware chunking were close to each other (recall 0.80 and 0.78), with fixed slightly ahead on ranking metrics.
+Semantic chunking led on recall (0.92) and precision (0.53). But its chunks were about a third the size of the other two strategies. Smaller chunks make recall@5 easier to hit, so the higher score is misleading rather than a real gain. Fixed and sentence-aware chunking were close to each other (recall 0.80 and 0.78), with fixed slightly ahead on ranking metrics. The semantic chunking used a similarity threshold of 0.3. But the threshold is already low, yet the chunks size still came out small. Lowering it further would merge unrelated sentences and blur the meaning of each chunk, so it was left at 0.3.
+
+### Index type
+
+HNSW stayed close to the FlatIP exact-search baseline (0.92 vs 0.94 recall at 20K). IVF dropped to 0.84. The reason is that `nprobe` was left at its default of 1, so each query searched only one of the 256 partitions. That is too little coverage — the drop is an under-probing effect, not a weakness in IVF itself. IVF was built with `nlist=256` and HNSW with `M=32`. A fuller sweep of `nprobe` and `M` is left for later benchmarking.
 
 ### Retrieval
 
-Hybrid retrieval gave the best balance, matching dense on recall (0.92) while improving MRR (0.88) and correctness (0.82) over both dense and BM25 alone. BM25 on its own had the weakest recall and relevancy, and dense on its own trailed hybrid on ranking quality, confirming that combining sparse and dense signals helped most.
+Hybrid retrieval gave the best balance. It matched dense on recall (0.92) and beat both dense and BM25 on MRR (0.88) and correctness (0.82). BM25 alone had the weakest recall and relevancy. Dense alone trailed hybrid on ranking quality. Combining the sparse and dense signals is what helped most.
 
 ### Reranking
 
 Adding the cross-encoder reranker on top of hybrid retrieval raised precision (0.40 to 0.49) and MRR (0.81 to 0.86) while recall stayed flat at 0.88. This is the expected behavior of a reordering step: it promotes the relevant chunks already retrieved without changing which chunks were retrieved.
-
-### Index type
-
-At matched configuration, HNSW tracked the FlatIP exact-search baseline closely (0.92 vs 0.94 recall at 20K), while IVF at its default `nprobe` dropped to 0.84 — an under-probing effect, not a fundamental weakness. Qdrant at 50K held recall at 0.84, close to FlatIP hybrid at the same scale, confirming it as a viable managed alternative to the in-process FAISS indexes.
 
 ### Evaluation metrics across runs
 
@@ -172,3 +172,7 @@ File sizes in MB, generation times in seconds. Index time is the total build tim
 | 50K | Semantic | 180.16 | 791.36 | 755.30 | 297.73 | 732.78 | 736.97 | 862.60 | 208.71 |
 
 Total index build time (all indexes combined): 31.18s at 20K, 129.67s at 50K.
+
+Fixed and sentence-aware chunking have identical across file sizes and build times. Semantic chunking is the outlier: because it produces many more, smaller chunks, its chunking step runs about 9x slower than fixed at 50K, and its embedding and index files are roughly 2–3x larger. Total index build time stays low — around 2 minutes at 50K — so indexing is never the bottleneck.
+
+At 50K, the full artifact set totals about 6.6 GB: chunks 528 MB, embeddings 1.29 GB, FAISS indexes 3.99 GB (FlatIP, IVF, HNSW across all three chunking strategies), BM25 605 MB, and Qdrant 376 MB.
