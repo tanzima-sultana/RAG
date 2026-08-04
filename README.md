@@ -116,3 +116,59 @@ The same path backs two entry points: one single evaluation for each run, which 
 | 20K | fixed | FlatIP | hybrid | yes | 0.94 | 0.54 | 0.91 | 0.74 | 0.98 | 0.97 | 0.88 | 1.45 |
 | 20K | fixed | IVF | hybrid | yes | 0.84 | 0.45 | 0.80 | 0.67 | 0.99 | 0.88 | 0.79 | 1.43 |
 | 20K | fixed | HNSW | hybrid | yes | 0.92 | 0.53 | 0.89 | 0.72 | 0.98 | 0.94 | 0.85 | 1.43 |
+
+### Chunking
+
+Semantic chunking led on recall (0.92) and precision (0.53), but at roughly a third of the chunk size of the other two strategies, which favors recall@5 and makes the gain misleading. Fixed and sentence-aware chunking were close to each other (recall 0.80 and 0.78), with fixed slightly ahead on ranking metrics.
+
+### Retrieval
+
+Hybrid retrieval gave the best balance, matching dense on recall (0.92) while improving MRR (0.88) and correctness (0.82) over both dense and BM25 alone. BM25 on its own had the weakest recall and relevancy, and dense on its own trailed hybrid on ranking quality, confirming that combining sparse and dense signals helped most.
+
+### Reranking
+
+Adding the cross-encoder reranker on top of hybrid retrieval raised precision (0.40 to 0.49) and MRR (0.81 to 0.86) while recall stayed flat at 0.88. This is the expected behavior of a reordering step: it promotes the relevant chunks already retrieved without changing which chunks were retrieved.
+
+### Index type
+
+At matched configuration, HNSW tracked the FlatIP exact-search baseline closely (0.92 vs 0.94 recall at 20K), while IVF at its default `nprobe` dropped to 0.84 — an under-probing effect, not a fundamental weakness. Qdrant at 50K held recall at 0.84, close to FlatIP hybrid at the same scale, confirming it as a viable managed alternative to the in-process FAISS indexes.
+
+### Evaluation metrics across runs
+
+Retrieval metrics spread the widest, reflecting the configuration differences: recall ranged 0.78 to 0.94 (mean 0.87), precision 0.39 to 0.58 (mean 0.49), MRR 0.71 to 0.91 (mean 0.84), and semantic answer similarity 0.66 to 0.80 (mean 0.74). The lower ends came from the weaker setups (BM25-only, IVF at default `nprobe`), and the upper ends from hybrid retrieval with reranking.
+
+The LLM-as-judge answer-quality scores were higher and more stable. Faithfulness stayed between 0.96 and 0.99 (mean 0.98) across every run, showing answers remained grounded in retrieved context regardless of configuration. Relevancy ranged 0.84 to 0.98 (mean 0.93), dipping only where retrieval was weakest. Correctness was the lowest of the three at 0.72 to 0.89 (mean 0.82), tracking retrieval quality — when retrieval surfaced weaker context, answers stayed faithful and on-topic but were more often incomplete or wrong.
+
+### How the carried-forward configuration was chosen
+
+The benchmark was run in stages rather than as a full grid, to keep the number of runs and the API cost down (each run incurs answer generation and LLM-as-judge Claude API calls). Each stage fixed the winner of the previous one and varied only the next parameter.
+
+First, chunking was compared. Semantic chunking scored the highest recall (0.92 vs 0.80 fixed, 0.78 sentence), but its average chunk size was far smaller (~70 vs ~210 characters of fixed and sentence), producing more and shorter chunks. Because recall@5 is mechanically easier to satisfy with smaller chunks, the comparison was not fair. So, fixed-size chunking was carried forward instead of semantic.
+
+Retrieval was compared next, holding chunking fixed. Hybrid retrieval won over dense and BM25, so it was carried into the remaining stages. Reranking was then compared on top of hybrid; it improved ranking quality, so it was kept on. The winning configuration — fixed chunking, hybrid retrieval, reranking on — was then run across index types (FlatIP, IVF, HNSW, Qdrant) and dataset sizes (5K, 20K, 50K).
+
+### Load Test
+
+FastAPI `/query` endpoint, full pipeline, latency in milliseconds.
+
+| Concurrency | p50 (ms) | p95 (ms) | p99 (ms) | Throughput (req/s) | Error Rate |
+| ----------- | -------- | -------- | -------- | ------------------ | ---------- |
+| 5 | 2927 | 3299 | 3334 | 1.49 | 0% |
+| 10 | 4777 | 6272 | 6714 | 1.46 | 0% |
+
+The full serving path — query embedding, vector search, reranking, and answer generation — was load tested. Latency rose with concurrency: p50 went from 2.9s to 4.8s and p99 from 3.3s to 6.7s, while throughput held near 1.5 req/s and the error rate stayed at 0% across both runs. The latency is LLM-bound, driven by the answer-generation call rather than retrieval. The p50–p99 gap also widened at concurrency 10 (4.8s to 6.7s versus 2.9s to 3.3s at concurrency 5), the slowest requests stretching further as load increased.
+
+### File sizes and generation times
+
+File sizes in MB, generation times in seconds. Index time is the total build time across all indexes combined.
+
+| Dataset | Strategy | Chunk Size | Chunk Time | Embed Size | Embed Time | FlatIP | IVF | HNSW | BM25 |
+| ------- | -------- | ---------- | ---------- | ---------- | ---------- | ------ | ------ | ------ | ------ |
+| 20K | Fixed | 72.91 | 33.91 | 108.77 | 99.06 | 105.47 | 106.40 | 124.16 | 82.48 |
+| 20K | Sentence | 65.26 | 34.68 | 104.51 | 97.78 | 101.42 | 102.32 | 119.39 | 77.91 |
+| 20K | Semantic | 71.49 | 320.28 | 299.72 | 120.36 | 290.78 | 292.67 | 342.03 | 84.72 |
+| 50K | Fixed | 183.72 | 90.75 | 273.92 | 242.90 | 265.80 | 267.56 | 312.90 | 204.16 |
+| 50K | Sentence | 164.46 | 90.85 | 263.38 | 240.86 | 255.57 | 257.28 | 300.85 | 191.63 |
+| 50K | Semantic | 180.16 | 791.36 | 755.30 | 297.73 | 732.78 | 736.97 | 862.60 | 208.71 |
+
+Total index build time (all indexes combined): 31.18s at 20K, 129.67s at 50K.
