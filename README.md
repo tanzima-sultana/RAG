@@ -346,3 +346,21 @@ Run parameters are set as variables at the top of `local_run.sh`. Edit them befo
 - `RERANK_K` — candidates retrieved before reranking down to `K`
 
 The same variables are set in `load_test.sh` for the serving run.
+
+## Known Issues / Failure Modes
+
+**Semantic chunking produces very small chunks.** Even at a low similarity threshold of 0.3, the semantic splitter yields chunks about a third the size of fixed and sentence-aware chunking (~70 vs ~210 characters). Smaller chunks inflate recall@5 because there are more of them to match, so semantic chunking's higher recall is not a fair win. Lowering the threshold further would merge unrelated sentences and blur chunk meaning, so it was left at 0.3.
+
+**Load-test latency is high.** Latency rises with concurrency (p50 2.9s → 4.8s, p99 3.3s → 6.7s from concurrency 5 to 10). A per-stage latency breakdown was not captured, so the exact split between retrieval and answer generation is not measured in this run. Adding that breakdown is the next step for characterizing where the time goes.
+
+**IVF underperforms at default settings.** IVF recall dropped to 0.84 at both 5K and 20K because `nprobe` was left at its default of 1 — each query searches only one of the 256 partitions. IVF is also under-trained below `39 × nlist` (~9,984) vectors, so at 5K it falls under the recommended training size. Both are configuration effects, not weaknesses in IVF itself.
+
+**Per-strategy eval sets are not cross-comparable.** A separate eval set is generated for each chunking strategy, so the questions differ across strategies. Comparisons within a strategy (index type, retrieval mode, dataset size) are controlled, but the chunking comparison across strategies is confounded by different questions.
+
+## Future Work
+
+- Run chunking and embedding in distributed mode on AWS to handle larger datasets
+- Improve latency under higher concurrency
+- Expand the benchmark with more runs across the full parameter grid
+- Sweep index parameters — IVF `nprobe` and `nlist`, HNSW `M` — to measure the recall/latency trade-off
+- Vary chunk size and overlap to study their effect on retrieval and answer quality
