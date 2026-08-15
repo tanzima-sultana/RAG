@@ -15,7 +15,13 @@ A RAG (retrieval-augmented generation) benchmarking pipeline. It builds chunking
 
 ## Commands
 
-There is no test suite, linter, or type checker configured in this repo — verification is done by running the pipeline (optionally in mock mode) and inspecting logs/output files.
+There is no linter or type checker configured in this repo. There is a pytest suite under `tests/` covering each phase of `scripts/build_rag.py` and `scripts/eval_rag.py` (dataset, chunking, embedding, indexing, vector DB, eval-set generation, retrieval dispatch, evaluation), plus two script-level orchestration tests. It mocks every heavy/network dependency (SentenceTransformer, CrossEncoder, Qdrant, Anthropic) via `tests/fakes.py`, so it runs in seconds with no GPU, Docker, or real API key — only a `config.py` (see Setup) needs to exist for imports to resolve. Run it with:
+
+```bash
+python3 -m pytest
+```
+
+`pytest.ini` points this at `tests/` and puts the repo root on `PYTHONPATH`. The `.claude/skills/git-commit` skill runs this suite before every commit and blocks the commit if it fails — beyond that, verification of the real pipeline is done by running it (optionally with `--mock_run 1`) and inspecting logs/output files.
 
 **Local build + eval** (edit parameters at the top of the script first, then run):
 ```bash
