@@ -44,6 +44,11 @@ def parse_args():
                          help="Number of HNSW M")
     parser.add_argument("--mock_run", type=int, default=1,
                          help="mock run 0 or 1")
+    parser.add_argument("--rebuild_vectordb", type=int, default=0,
+                         help="0 = reuse an existing Qdrant collection as-is, "
+                              "1 = delete and re-upload it from the current embeddings "
+                              "(use after chunking/embedding changes, since the collection "
+                              "name doesn't change just because its contents did)")
     parser.add_argument("--num_queries", type=int, default=5,
                          help="Num of eval questions")
 
@@ -70,6 +75,7 @@ if __name__ == "__main__":
     ivf_nlist = args.ivf_nlist
     hnsw_m = args.hnsw_m
     mock_run = args.mock_run
+    rebuild_vectordb = args.rebuild_vectordb
     num_queries = args.num_queries
 
     if not torch.cuda.is_available():
@@ -153,9 +159,9 @@ if __name__ == "__main__":
 
     # Fixed, Sentence & Semantic
     # Saving the names of the collection
-    vectordb_fixed = vdb.create_vector_db(embedding_fixed_path)
-    vectordb_sentence = vdb.create_vector_db(embedding_sentence_path)
-    vectordb_semantic = vdb.create_vector_db(embedding_semantic_path)
+    vectordb_fixed = vdb.create_vector_db(embedding_fixed_path, force_recreate=bool(rebuild_vectordb))
+    vectordb_sentence = vdb.create_vector_db(embedding_sentence_path, force_recreate=bool(rebuild_vectordb))
+    vectordb_semantic = vdb.create_vector_db(embedding_semantic_path, force_recreate=bool(rebuild_vectordb))
 
     if not vectordb_fixed or not vectordb_sentence or not vectordb_semantic:
         print("VectorDB failed, exiting")

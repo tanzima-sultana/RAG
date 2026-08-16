@@ -89,6 +89,9 @@ class FakeQdrantClient:
     def create_collection(self, collection_name, vectors_config):
         self.collections[collection_name] = {"vectors_config": vectors_config, "points": {}}
 
+    def delete_collection(self, collection_name):
+        self.collections.pop(collection_name, None)
+
     def upsert(self, collection_name, points):
         for point in points:
             self.collections[collection_name]["points"][point.id] = point

@@ -61,7 +61,7 @@ class FakeVectorDB:
     def __init__(self, db_name):
         self.db_name = db_name
 
-    def create_vector_db(self, embedding_path):
+    def create_vector_db(self, embedding_path, force_recreate=False):
         return f"{self.db_name}_{embedding_path}"
 
 
@@ -145,7 +145,7 @@ def test_build_rag_exits_when_chunking_fails(patched_collaborators, isolated_cwd
 
 
 def test_build_rag_exits_when_vector_db_creation_fails(patched_collaborators, isolated_cwd, monkeypatch):
-    monkeypatch.setattr(FakeVectorDB, "create_vector_db", lambda self, embedding_path: None)
+    monkeypatch.setattr(FakeVectorDB, "create_vector_db", lambda self, embedding_path, force_recreate=False: None)
 
     with pytest.raises(SystemExit) as exc_info:
         run_build_rag(BASE_ARGS)

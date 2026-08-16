@@ -27,6 +27,12 @@ HNSW_M=32
 MOCK_RUN=0
 NUM_QUERIES=50
 
+# Set to 1 after changing chunking/embedding code or params and regenerating
+# embeddings for a size/strategy that already has a Qdrant collection — the
+# collection name doesn't change just because its contents did, so without
+# this the old vectors would otherwise be silently left in place.
+REBUILD_VECTORDB=0
+
 BUILD_LOG="log/build_log.txt"
 
 python3 scripts/build_rag.py \
@@ -41,4 +47,5 @@ python3 scripts/build_rag.py \
   --hnsw_m $HNSW_M \
   --mock_run $MOCK_RUN \
   --num_queries $NUM_QUERIES \
+  --rebuild_vectordb $REBUILD_VECTORDB \
   2>&1 | tee "$BUILD_LOG"

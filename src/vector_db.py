@@ -35,16 +35,26 @@ class VectorDB:
         )
         return results.points
 
-    def create_vector_db(self, embedding_path):
+    def create_vector_db(self, embedding_path, force_recreate=False):
 
         name_etxn = embedding_path.removeprefix("embeddings/").removesuffix(".pkl").replace("/", "_")
         name = f"{self.db_name}_{name_etxn}"
 
         try:
-            if self.client.collection_exists(collection_name=name):
+            exists = self.client.collection_exists(collection_name=name)
+
+            # The collection name is derived from the embedding file's path, not its
+            # content, so a regenerated embeddings.pkl (new chunking/embedding code,
+            # same path) would otherwise silently leave Qdrant holding the old vectors.
+            if exists and force_recreate:
+                print(f"VectorDB collection {name} exists, deleting it for a fresh rebuild.")
+                self.client.delete_collection(collection_name=name)
+                exists = False
+
+            if exists:
                 print(f"VectorDB collection {name} already exists, skipping creation.")
                 return name
-        
+
             # Load embedding_map
             embeddings_map = None
             with open(embedding_path, "rb") as f:
