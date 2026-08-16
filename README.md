@@ -160,6 +160,19 @@ The full serving path — query embedding, vector search, reranking, and answer 
 
 ### File sizes and generation times
 
+#### Chunking time: before vs. after batching sentence embedding
+
+Semantic chunking used to call the embedding model once per document — for a corpus with thousands of documents and only a handful of sentences each, that's thousands of small `model.encode()` calls instead of a few large batched ones, which badly underuses the GPU. Sentence-aware and semantic chunking also each ran their own separate NLTK sentence-tokenization pass over the same document text, duplicating that work. Both were consolidated into a single pass: every document's sentences are tokenized once and shared between the two strategies, and every sentence in the whole dataset is embedded in one batched call before any chunk-splitting decisions are made.
+
+| Dataset | Version | Fixed (s) | Sentence (s) | Semantic (s) | Shared sentence-tokenize + batch-embed (s) | Total chunking wall time (s) |
+| ------- | ------- | --------- | ------------- | ------------- | ------------------------------------------- | ----------------------------- |
+| 20K | Old (pre-batching) | 33.91 | 34.68 | 320.28 | — | ~389 |
+| 20K | New (batched) | 29.02 | 18.10 | 22.79 | 156.77 | 230.33 |
+| 50K | Old (pre-batching) | | | | | |
+| 50K | New (batched) | | | | | |
+
+Chunk output — file sizes, chunk boundaries — is unchanged; this only changed how the work is scheduled. At 20K, total chunking wall time dropped ~41% (389s → 230s). Semantic chunking's own per-strategy cost dropped from 320s to 23s, since the sentence-tokenize + embedding cost it used to pay entirely on its own is now shared with sentence-aware chunking instead of being paid twice.
+
 File sizes in MB, generation times in seconds. Index time is the total build time across all indexes combined.
 
 | Dataset | Strategy | Chunk Size | Chunk Time | Embed Size | Embed Time | FlatIP | IVF | HNSW | BM25 |

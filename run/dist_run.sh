@@ -1,3 +1,6 @@
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR/.."
+
 source ~/pyenv/bin/activate
 
 export PYTHONPATH="$(pwd):$PYTHONPATH"
@@ -5,6 +8,7 @@ export PYTHONPATH="$(pwd):$PYTHONPATH"
 export JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
 export JAVA_TOOL_OPTIONS="--add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.nio=ALL-UNNAMED --add-opens=java.base/sun.nio.ch=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED"
 unset SPARK_HOME
+mkdir -p log
 
 MODE="local" # local, aws
 NUM_PARTITION=4
@@ -18,7 +22,7 @@ FIX_CHUNK_OVERLAP=32
 SEMANTIC_THREASHOLD=0.3
 INDEXING_TYPE="flatip" #flatip, ivf, hnsw
 
-OUTPUT_FILE="log.txt"
+OUTPUT_FILE="log/dist_run.txt"
 
 python3 scripts/run_dist_rag.py \
   --mode $MODE \
