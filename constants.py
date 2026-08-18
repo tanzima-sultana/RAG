@@ -22,6 +22,11 @@ BM25="bm25"
 HYBRID="hybrid"
 VECTOR_DB="vector_db"
 
+# Source format
+TXT="txt"
+MD="md"
+PDF="pdf"
+
 # API Cost
 
 INPUT_COST_PER_MTOK = 3.00
